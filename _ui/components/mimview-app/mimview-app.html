@@ -1,0 +1,35 @@
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../components/mim-image/mim-image.html">
+<link rel="import" href="../../components/mim-nav/mim-nav.html">
+<link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="mimview-app">
+  <template>
+    <style>
+      :host {
+        height: 100%;
+      }
+      #main {
+        display: -webkit-flex;  /* Safari */
+        display: flex;
+        flex-direction: row;
+        -webkit-flex-direction: row;    /* Safari */
+        flex-wrap: nowrap;
+        -webkit-flex-warp: nowrap;      /* Safari */
+        height: 100%;
+      }
+      #image {
+        flex-grow: 1;
+        background-color: red;
+        height: 100%;
+      }
+    </style>
+    <div id="main">
+      <mim-nav></mim-nav>
+      <mim-image id="image"></mim-image>
+    </div>
+  </template>
+</dom-module>
+
+<script src="mimview-app.js"></script>
