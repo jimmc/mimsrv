@@ -1,5 +1,8 @@
+<link rel="import" href="../../modules/api-manager/api-manager.html">
+
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
@@ -14,6 +17,13 @@
     </div>
     <paper-button>Button in nav</paper-button>
     <paper-checkbox>Checkbox in nav</paper-checkbox>
+    <div id="listContainer">
+      <template is="dom-repeat" id="list" items="[[rows]]" as="row">
+        <paper-item on-click="rowClicked">
+          <span>[[row]]</span>
+        </paper-item>
+      </template>
+    </div>
   </template>
 </dom-module>
 
