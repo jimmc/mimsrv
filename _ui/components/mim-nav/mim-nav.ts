@@ -1,7 +1,11 @@
 /* Nav component */
 
+interface ListItem {
+  Name: string;
+}
+
 interface ListResponse {
-  Names: string[];
+  Items: ListItem[];
 }
 
 @Polymer.decorators.customElement('mim-nav')
@@ -26,7 +30,7 @@ class MimNav extends Polymer.Element {
 
   handleListResponse(dir: string, list: ListResponse) {
     console.log("list:", list);
-    const fullPaths = list.Names.map((entry) => dir + "/" + entry);
+    const fullPaths = list.Items.map((entry) => dir + "/" + entry.Name);
     this.setRows(fullPaths);
   }
 
