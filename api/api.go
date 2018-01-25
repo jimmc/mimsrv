@@ -23,6 +23,7 @@ type Config struct {
 
 type ListItem struct {
   Name string
+  IsDir bool
 }
 
 type ListResult struct {
@@ -87,6 +88,7 @@ func mapFileInfosToListResult(files []os.FileInfo) ListResult {
 
 func mapFileInfoToListItem(f os.FileInfo, item *ListItem) {
   item.Name = f.Name()
+  item.IsDir = f.IsDir()
 }
 
 func (h *handler) image(w http.ResponseWriter, r *http.Request) {
