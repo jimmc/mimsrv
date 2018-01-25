@@ -21,8 +21,12 @@ type Config struct {
   ContentRoot string    // The root directory of our photo hierarchy
 }
 
+type ListItem struct {
+  Name string
+}
+
 type ListResult struct {
-  Names []string
+  Items []ListItem
 }
 
 type handler struct {
@@ -53,15 +57,13 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
     return
   }
   defer f.Close()
-  names, err := f.Readdirnames(0)       // Read all file names
+  files, err := f.Readdir(0)       // Read all file names
   if err != nil {
     http.Error(w, fmt.Sprintf("Failed to read dir: %v", err), http.StatusBadRequest)
     return
   }
 
-  result := &ListResult{
-    Names: names,
-  }
+  result := mapFileInfosToListResult(files)
 
   b, err := json.MarshalIndent(result, "", "  ")
   if err != nil {
@@ -70,6 +72,21 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
   }
   w.WriteHeader(http.StatusOK)
   w.Write(b)
+}
+
+func mapFileInfosToListResult(files []os.FileInfo) ListResult {
+  n := len(files)
+  list := make([]ListItem, n, n)
+  for i, f := range files {
+    mapFileInfoToListItem(f, &list[i])
+  }
+  return ListResult{
+    Items: list,
+  }
+}
+
+func mapFileInfoToListItem(f os.FileInfo, item *ListItem) {
+  item.Name = f.Name()
 }
 
 func (h *handler) image(w http.ResponseWriter, r *http.Request) {
