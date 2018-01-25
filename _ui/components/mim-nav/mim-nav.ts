@@ -2,6 +2,7 @@
 
 interface ListItem {
   Name: string;
+  IsDir: boolean;
 }
 
 interface ListResponse {
@@ -30,7 +31,11 @@ class MimNav extends Polymer.Element {
 
   handleListResponse(dir: string, list: ListResponse) {
     console.log("list:", list);
-    const fullPaths = list.Items.map((entry) => dir + "/" + entry.Name);
+    const fullPaths = list.Items.map((entry) =>
+      dir +
+      (dir.endsWith('/') ? '' : '/') +
+      entry.Name +
+      ((entry.IsDir && !entry.Name.endsWith('/')) ? '/' : ''));
     this.setRows(fullPaths);
   }
 
