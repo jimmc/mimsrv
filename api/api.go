@@ -10,6 +10,7 @@ import (
   "log"
   "net/http"
   "os"
+  "sort"
   "strconv"
   "strings"
 
@@ -63,6 +64,7 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
     http.Error(w, fmt.Sprintf("Failed to read dir: %v", err), http.StatusBadRequest)
     return
   }
+  sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 
   result := mapFileInfosToListResult(files)
 
