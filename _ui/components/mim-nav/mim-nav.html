@@ -11,6 +11,13 @@
     <style>
       :host {
       }
+      .nav-item {
+        min-height: 0;
+        padding-left: 2px;
+      }
+      .dir {
+        background-color: lightblue;
+      }
     </style>
     <div>
       This is the nav bar
@@ -19,8 +26,11 @@
     <paper-checkbox>Checkbox in nav</paper-checkbox>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
-        <paper-item on-click="rowClicked">
-          <span>[[row]]</span>
+        <paper-item on-click="rowClicked" class$="{{getRowClass(row)}}">
+          <template is="dom-repeat" items="{{indentsForRow(row)}}">
+            &nbsp;
+          </template>
+          <span>[[row.path]]</span>
         </paper-item>
       </template>
     </div>
