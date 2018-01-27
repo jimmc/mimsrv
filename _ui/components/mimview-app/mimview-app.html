@@ -19,14 +19,21 @@
         -webkit-flex-warp: nowrap;      /* Safari */
         height: 100%;
       }
+      #nav {
+        width: 20%;
+        overflow: scroll;
+        white-space: nowrap;
+      }
       #image {
         flex-grow: 1;
-        background-color: red;
+        overflow: scroll;
+        background-color: #eee;
         height: 100%;
+        width: 80%;
       }
     </style>
     <div id="main">
-      <mim-nav imgsrc={{imgsrc}}></mim-nav>
+      <mim-nav id="nav" imgsrc={{imgsrc}}></mim-nav>
       <mim-image id="image" imgsrc="[[imgsrc]]"></mim-image>
     </div>
   </template>
