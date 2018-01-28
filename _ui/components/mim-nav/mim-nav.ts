@@ -25,6 +25,9 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: String, notify: true})
   imgsrc: string;
 
+  @Polymer.decorators.property({type: Object})
+  imgsize: any;
+
   @Polymer.decorators.property({type: Array})
   rows: NavItem[] = [];
 
@@ -40,7 +43,6 @@ class MimNav extends Polymer.Element {
   }
 
   handleListResponse(dir: string, list: ListResponse) {
-    console.log("list:", list);
     const navItems = list.Items.map(
         (listItem) => this.listToNav(listItem, dir));
     this.updateDirRows(dir, navItems);
@@ -133,11 +135,12 @@ class MimNav extends Polymer.Element {
   }
 
   setImageSource(src: string) {
-    /*
-    const height = this.$.img.clientHeight;
-    const width = this.$.img.clientWidth;
-    console.log('Height:', height, ' Width:', width);
-    */
-    this.imgsrc = "/api/image/" + src;
+    let qParms = '';
+    if (this.imgsize) {
+      const height = this.imgsize.height;
+      const width = this.imgsize.width;
+      qParms = '?w=' + width + '&h=' + height;
+    }
+    this.imgsrc = "/api/image" + src + qParms;
   }
 }
