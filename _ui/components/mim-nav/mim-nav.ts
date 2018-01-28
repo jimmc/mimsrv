@@ -144,6 +144,7 @@ class MimNav extends Polymer.Element {
       rowElement.scrollIntoView(false);
     }
     if (row.isDir) {
+      this.setImageSource('');
       if (row.expanded) {
         this.collapseRowAt(index);
       } else {
@@ -180,6 +181,16 @@ class MimNav extends Polymer.Element {
     }
   }
 
+  @Polymer.decorators.observe('imgsize')
+  imgsizeChanged() {
+    if (this.selectedIndex >= 0) {
+      const row = this.rows[this.selectedIndex];
+      if (!row.isDir) {
+        this.selectAt(this.selectedIndex);
+      }
+    }
+  }
+
   setImageSource(src: string) {
     let qParms = '';
     if (this.imgsize) {
@@ -187,6 +198,10 @@ class MimNav extends Polymer.Element {
       const width = this.imgsize.width;
       qParms = '?w=' + width + '&h=' + height;
     }
-    this.imgsrc = "/api/image" + src + qParms;
+    if (src) {
+      this.imgsrc = "/api/image" + src + qParms;
+    } else {
+      this.imgsrc = '';
+    }
   }
 }
