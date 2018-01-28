@@ -6,13 +6,15 @@
     <style>
       :host {
       }
-      #img-container {
+      #imgContainer {
         height: 100%;
         width: 100%;
       }
     </style>
-    <div id="img-container">
-      <img id="img" src="[[imgsrc]]">
+    <div id="imgContainer">
+      <a id="imgWrapper" tabindex=0>
+        <img id="img" src="[[imgsrc]]">
+      </a>
     </div>
   </template>
 </dom-module>

@@ -18,15 +18,20 @@ class MimImage extends Polymer.Element {
     super.ready();
     window.addEventListener('resize', () => this.handleResize());
     this.handleResize();
+    this.$.imgWrapper.addEventListener('keydown', this.keydown.bind(this));
   }
 
   handleResize() {
-    const width = this.$.img.parentElement.clientWidth;
-    const height = this.$.img.parentElement.clientHeight;
+    const width = this.$.imgContainer.clientWidth;
+    const height = this.$.imgContainer.clientHeight;
     this.imgsize = {
       width,
       height,
     } as ImageSize;
     console.log('image size:', this.imgsize);
+  }
+
+  keydown(e: any) {
+    this.dispatchEvent(new CustomEvent('mimkey', {detail: e}));
   }
 }

@@ -31,6 +31,9 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Array})
   rows: NavItem[] = [];
 
+  @Polymer.decorators.property({type: Number})
+  selectedIndex: number;
+
   ready() {
     super.ready();
     this.queryApiList('');
@@ -108,12 +111,18 @@ class MimNav extends Polymer.Element {
     this.rows[index].expanded = false;
   }
 
-  getRowClass(row: NavItem) {
+  getRowClass(row: NavItem, selectedIndex: number) {
+    let classList = ['nav-item'];
     if (row.isDir) {
-      return "nav-item dir";
-    } else {
-      return "nav-item";
+      classList.push('dir');
     }
+    const rowIndex = this.rows.indexOf(row);
+    if (rowIndex >= 0) {
+      if (rowIndex === selectedIndex) {
+        classList.push('selected');
+      }
+    }
+    return classList.join(' ');
   }
 
   indentsForRow(row: NavItem) {
@@ -121,8 +130,19 @@ class MimNav extends Polymer.Element {
   }
 
   rowClicked(e: any) {
-    const index = e.model.index;
+    this.selectAt(e.model.index);
+  }
+
+  selectAt(index: number) {
+    this.selectedIndex = index;
     const row = this.rows[index];
+    const rowElements = this.$.listContainer.querySelectorAll('.nav-item');
+    const rowElement = rowElements[index];
+    if (rowElement.offsetTop < this.scrollTop) {
+      rowElement.scrollIntoView(true);
+    } else if (rowElement.offsetTop + rowElement.offsetHeight > this.scrollTop + this.offsetHeight) {
+      rowElement.scrollIntoView(false);
+    }
     if (row.isDir) {
       if (row.expanded) {
         this.collapseRowAt(index);
@@ -131,6 +151,32 @@ class MimNav extends Polymer.Element {
       }
     } else {
       this.setImageSource(row.path);
+    }
+  }
+
+  selectNext() {
+    if (this.selectedIndex >= 0 &&
+        this.selectedIndex < this.rows.length - 1 &&
+        this.rows[this.selectedIndex + 1].level === this.rows[this.selectedIndex].level) {
+      this.selectAt(this.selectedIndex + 1);
+    }
+  }
+
+  selectPrevious() {
+    if (this.selectedIndex > 0 &&
+        this.selectedIndex < this.rows.length &&
+        this.rows[this.selectedIndex - 1].level === this.rows[this.selectedIndex].level) {
+      this.selectAt(this.selectedIndex - 1);
+    }
+  }
+
+  onMimKey(e: any) {
+    console.log('nav mimkey', e);
+    const key = e.detail.key;
+    if (key === 'ArrowDown') {
+      this.selectNext();
+    } else if (key === 'ArrowUp') {
+      this.selectPrevious();
     }
   }
 

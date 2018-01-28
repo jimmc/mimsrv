@@ -16,11 +16,14 @@
       .dir {
         background-color: lightblue;
       }
+      .selected {
+        background-color: lightgreen;
+      }
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
-        <paper-item on-click="rowClicked" class$="{{getRowClass(row)}}">
-          <template is="dom-repeat" items="{{indentsForRow(row)}}">
+        <paper-item on-click="rowClicked" class$="[[getRowClass(row, selectedIndex)]]">
+          <template is="dom-repeat" items="[[indentsForRow(row)]]">
             &nbsp;
           </template>
           <span>[[row.path]]</span>
