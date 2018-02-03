@@ -7,6 +7,8 @@ interface ListItem {
   Size: number;
   ModTime: number;      // seconds since the epoch
   ModTimeStr: string;   // ModTime converted to string in the server
+  Text: string;
+  TextError: string;
 }
 
 interface ListResponse {
@@ -23,6 +25,8 @@ interface NavItem {
   size: number;
   modTime: number;
   modTimeStr: string;
+  text: string;
+  textError: string;
 }
 
 @Polymer.decorators.customElement('mim-nav')
@@ -69,6 +73,8 @@ class MimNav extends Polymer.Element {
       size: listItem.Size,
       modTime: listItem.ModTime,
       modTimeStr: listItem.ModTimeStr,
+      text: listItem.Text,
+      textError: listItem.TextError,
     } as NavItem;
   }
 

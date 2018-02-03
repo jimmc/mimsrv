@@ -30,6 +30,13 @@
       .date {
         font-style: italic;
       }
+      .text {
+        white-space: normal;
+      }
+      .textError {
+        color: red;
+        white-space: normal;
+      }
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
@@ -42,10 +49,14 @@
           <span hidden$=[[row.isDir]]>
             <span class="path">[[row.name]]</span>
             <span class="size">[[sizeAsString(row)]]</span><br>
-            <span class="date">[[row.modTimeStr]]</span>
+            <span class="date">[[row.modTimeStr]]</span><br>
+            <span class="text">[[row.text]]</span>
+            <span class="textError">[[row.textError]]</span>
           </span>
           <span hidden$=[[!row.isDir]]>
             <span class="path">[[row.path]]</span><br>
+            <span class="text">[[row.text]]</span>
+            <span class="textError">[[row.textError]]</span>
           </span>
         </paper-item>
       </template>
