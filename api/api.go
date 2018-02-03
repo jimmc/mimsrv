@@ -10,6 +10,7 @@ import (
   "log"
   "net/http"
   "os"
+  "path/filepath"
   "sort"
   "strconv"
   "strings"
@@ -33,6 +34,8 @@ type ListItem struct {
   Size int64
   ModTime int64          // seconds since the epoch
   ModTimeStr string      // ModTime converted to a string by the server
+  Text string
+  TextError string       // The error if we get one trying to read the text file
 }
 
 type ListResult struct {
@@ -41,15 +44,24 @@ type ListResult struct {
 
 type handler struct {
   config *Config
+  validExts map[string]bool
 }
 
 func NewHandler(c *Config) http.Handler {
   h := handler{config: c}
+  h.init()
   mux := http.NewServeMux()
   mux.HandleFunc(h.apiPrefix("list"), h.list)
   mux.HandleFunc(h.apiPrefix("image"), h.image)
   mux.HandleFunc(h.apiPrefix("text"), h.text)
   return mux
+}
+
+func (h *handler) init() {
+  h.validExts = map[string]bool {
+    ".gif": true,
+    ".jpg": true,
+  }
 }
 
 func (h *handler) list(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +73,7 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
   }
 
   contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
+  path = strings.TrimSuffix(path, "/")
   filepath := fmt.Sprintf("%s/%s", contentRoot, path)
   f, err := os.Open(filepath)
   if err != nil {
@@ -76,13 +89,10 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
   sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 
   var loc *time.Location
-  filepath = strings.TrimSuffix(filepath, "/")
   tzpath := fmt.Sprintf("%s/TZ", filepath)
   linkdest, err := os.Readlink(tzpath)
   if err != nil {
-    if os.IsNotExist(err) {
-      log.Printf("TZ file %s does not exist", tzpath)
-    } else {
+    if !os.IsNotExist(err) {
       log.Printf("Error reading TZ symlink %s: %v", tzpath, err)
     }
   } else {
@@ -90,12 +100,10 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
     loc, err = time.LoadLocation(tzname)
     if err != nil {
       log.Printf("Error loading timezone file %s: %v", tzpath, err)
-    } else {
-      log.Printf("Loaded timezone file %s: %v", tzpath, loc)
     }
   }
 
-  result := mapFileInfosToListResult(files, loc)
+  result := h.mapFileInfosToListResult(files, filepath, loc)
 
   b, err := json.MarshalIndent(result, "", "  ")
   if err != nil {
@@ -106,18 +114,34 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
   w.Write(b)
 }
 
-func mapFileInfosToListResult(files []os.FileInfo, loc *time.Location) ListResult {
+func (h *handler) mapFileInfosToListResult(files []os.FileInfo, parentpath string, loc *time.Location) ListResult {
   n := len(files)
-  list := make([]ListItem, n, n)
-  for i, f := range files {
-    mapFileInfoToListItem(f, &list[i], loc)
+  list := make([]ListItem, 0, n)
+  i := 0
+  for _, f := range files {
+    if h.keepFileInList(f) {
+      list = list[:i+1]
+      h.mapFileInfoToListItem(f, &list[i], parentpath, loc)
+      i = i + 1
+    }
   }
   return ListResult{
     Items: list,
   }
 }
 
-func mapFileInfoToListItem(f os.FileInfo, item *ListItem, loc *time.Location) {
+func (h *handler) keepFileInList(f os.FileInfo) bool {
+  if f.IsDir() {
+    return true;
+  }
+  ext := strings.ToLower(filepath.Ext(f.Name()))
+  if h.validExts[ext] {
+    return true;
+  }
+  return false;
+}
+
+func (h *handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentpath string, loc *time.Location) {
   item.Name = f.Name()
   item.IsDir = f.IsDir()
   item.Size = f.Size()
@@ -127,6 +151,26 @@ func mapFileInfoToListItem(f os.FileInfo, item *ListItem, loc *time.Location) {
     t = t.In(loc)
   }
   item.ModTimeStr = t.Format(timeFormat)
+  h.loadTextFile(item, parentpath)
+}
+
+func (h *handler) loadTextFile(item *ListItem, parentpath string) {
+  var textpath string
+  if item.IsDir {
+    textpath = fmt.Sprintf("%s/%s/summary.txt", parentpath, item.Name)
+  } else {
+    textname := fmt.Sprintf("%s.txt", strings.TrimSuffix(item.Name, filepath.Ext(item.Name)))
+    textpath = fmt.Sprintf("%s/%s", parentpath, textname)
+  }
+  b, err := ioutil.ReadFile(textpath)
+  if err != nil {
+    // We ignore the error if it is that the file does not exist
+    if !os.IsNotExist(err) {
+      item.TextError = fmt.Sprintf("%v", err)
+    }
+  } else {
+    item.Text = string(b)
+  }
 }
 
 func (h *handler) image(w http.ResponseWriter, r *http.Request) {
