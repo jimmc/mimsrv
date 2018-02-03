@@ -4,6 +4,9 @@
 interface ListItem {
   Name: string;
   IsDir: boolean;
+  Size: number;
+  ModTime: number;      // seconds since the epoch
+  ModTimeStr: string;   // ModTime converted to string in the server
 }
 
 interface ListResponse {
@@ -17,6 +20,9 @@ interface NavItem {
   level: number;
   expanded: boolean;
   isDir: boolean;
+  size: number;
+  modTime: number;
+  modTimeStr: string;
 }
 
 @Polymer.decorators.customElement('mim-nav')
@@ -60,6 +66,9 @@ class MimNav extends Polymer.Element {
       level,
       expanded: false,
       isDir: listItem.IsDir,
+      size: listItem.Size,
+      modTime: listItem.ModTime,
+      modTimeStr: listItem.ModTimeStr,
     } as NavItem;
   }
 
@@ -127,6 +136,28 @@ class MimNav extends Polymer.Element {
 
   indentsForRow(row: NavItem) {
     return new Array(row.level);
+  }
+
+  sizeAsString(row: NavItem) {
+    if (row.size <= 999) {
+      return row.size + "B";
+    }
+    if (row.size <= 9999) {
+      return Math.round(row.size/10)/100 + "K";
+    }
+    if (row.size <= 99999) {
+      return Math.round(row.size/100)/10 + "K";
+    }
+    if (row.size <= 999999) {
+      return Math.round(row.size/1000) + "K";
+    }
+    if (row.size <= 9999999) {
+      return Math.round(row.size/10000)/100 + "M";
+    }
+    if (row.size <= 99999999) {
+      return Math.round(row.size/100000)/10 + "M";
+    }
+    return Math.round(row.size/1000000) + "M";
   }
 
   rowClicked(e: any) {

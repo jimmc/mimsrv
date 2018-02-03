@@ -12,6 +12,8 @@
       .nav-item {
         min-height: 0;
         padding-left: 2px;
+        border: 1px black solid;
+        line-height: 1;
       }
       .dir {
         background-color: lightblue;
@@ -19,14 +21,32 @@
       .selected {
         background-color: lightgreen;
       }
+      .path {
+        font-weight: bold;
+      }
+      .size, .date {
+        font-size: small;
+      }
+      .date {
+        font-style: italic;
+      }
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
         <paper-item on-click="rowClicked" class$="[[getRowClass(row, selectedIndex)]]">
-          <template is="dom-repeat" items="[[indentsForRow(row)]]">
-            &nbsp;
-          </template>
-          <span>[[row.path]]</span>
+          <span>
+            <template is="dom-repeat" items="[[indentsForRow(row)]]">
+              &nbsp;
+            </template>
+          </span>
+          <span hidden$=[[row.isDir]]>
+            <span class="path">[[row.name]]</span>
+            <span class="size">[[sizeAsString(row)]]</span><br>
+            <span class="date">[[row.modTimeStr]]</span>
+          </span>
+          <span hidden$=[[!row.isDir]]>
+            <span class="path">[[row.path]]</span><br>
+          </span>
         </paper-item>
       </template>
     </div>
