@@ -13,8 +13,13 @@ import (
   "sort"
   "strconv"
   "strings"
+  "time"
 
   "github.com/disintegration/imaging"
+)
+
+const (
+  timeFormat = "3:04:05pm Mon Jan 2, 2006 MST"
 )
 
 type Config struct {
@@ -25,6 +30,9 @@ type Config struct {
 type ListItem struct {
   Name string
   IsDir bool
+  Size int64
+  ModTime int64          // seconds since the epoch
+  ModTimeStr string      // ModTime converted to a string by the server
 }
 
 type ListResult struct {
@@ -52,7 +60,8 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  filepath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
+  filepath := fmt.Sprintf("%s/%s", contentRoot, path)
   f, err := os.Open(filepath)
   if err != nil {
     http.Error(w, fmt.Sprintf("Failed to open file: %v", err), http.StatusNotFound)
@@ -66,7 +75,27 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
   }
   sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 
-  result := mapFileInfosToListResult(files)
+  var loc *time.Location
+  filepath = strings.TrimSuffix(filepath, "/")
+  tzpath := fmt.Sprintf("%s/TZ", filepath)
+  linkdest, err := os.Readlink(tzpath)
+  if err != nil {
+    if os.IsNotExist(err) {
+      log.Printf("TZ file %s does not exist", tzpath)
+    } else {
+      log.Printf("Error reading TZ symlink %s: %v", tzpath, err)
+    }
+  } else {
+    tzname := strings.TrimPrefix(linkdest, "/usr/share/zoneinfo/")
+    loc, err = time.LoadLocation(tzname)
+    if err != nil {
+      log.Printf("Error loading timezone file %s: %v", tzpath, err)
+    } else {
+      log.Printf("Loaded timezone file %s: %v", tzpath, loc)
+    }
+  }
+
+  result := mapFileInfosToListResult(files, loc)
 
   b, err := json.MarshalIndent(result, "", "  ")
   if err != nil {
@@ -77,20 +106,27 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
   w.Write(b)
 }
 
-func mapFileInfosToListResult(files []os.FileInfo) ListResult {
+func mapFileInfosToListResult(files []os.FileInfo, loc *time.Location) ListResult {
   n := len(files)
   list := make([]ListItem, n, n)
   for i, f := range files {
-    mapFileInfoToListItem(f, &list[i])
+    mapFileInfoToListItem(f, &list[i], loc)
   }
   return ListResult{
     Items: list,
   }
 }
 
-func mapFileInfoToListItem(f os.FileInfo, item *ListItem) {
+func mapFileInfoToListItem(f os.FileInfo, item *ListItem, loc *time.Location) {
   item.Name = f.Name()
   item.IsDir = f.IsDir()
+  item.Size = f.Size()
+  item.ModTime = f.ModTime().Unix()
+  t := f.ModTime()
+  if loc != nil {
+    t = t.In(loc)
+  }
+  item.ModTimeStr = t.Format(timeFormat)
 }
 
 func (h *handler) image(w http.ResponseWriter, r *http.Request) {
