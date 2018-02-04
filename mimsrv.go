@@ -7,6 +7,7 @@ import (
   "net/http"
 
   "github.com/jimmc/mimsrv/api"
+  "github.com/jimmc/mimsrv/content"
 )
 
 type config struct {
@@ -28,11 +29,14 @@ func main() {
 
   mux := http.NewServeMux()
 
+  contentHandler := content.NewHandler(&content.Config{
+    ContentRoot: config.contentRoot,
+  })
   uiFileHandler := http.FileServer(http.Dir(config.mimViewRoot))
   mux.Handle("/ui/", http.StripPrefix("/ui/", uiFileHandler))
   mux.Handle("/api/", api.NewHandler(&api.Config{
     Prefix: "/api/",
-    ContentRoot: config.contentRoot,
+    ContentHandler: contentHandler,
   }))
   mux.HandleFunc("/", redirectToUi)
 
