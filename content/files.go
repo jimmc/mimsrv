@@ -57,11 +57,11 @@ func (h *Handler) init() {
   }
 }
 
-func (h *Handler) List(path string) (*ListResult, error, int) {
+func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
-  path = strings.TrimSuffix(path, "/")
-  filepath := fmt.Sprintf("%s/%s", contentRoot, path)
-  f, err := os.Open(filepath)
+  dirApiPath = strings.TrimSuffix(dirApiPath, "/")
+  dirPath := fmt.Sprintf("%s/%s", contentRoot, dirApiPath)
+  f, err := os.Open(dirPath)
   if err != nil {
     return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
   }
@@ -73,7 +73,7 @@ func (h *Handler) List(path string) (*ListResult, error, int) {
   sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 
   var loc *time.Location
-  tzpath := fmt.Sprintf("%s/TZ", filepath)
+  tzpath := fmt.Sprintf("%s/TZ", dirPath)
   linkdest, err := os.Readlink(tzpath)
   if err != nil {
     if !os.IsNotExist(err) {
@@ -87,18 +87,18 @@ func (h *Handler) List(path string) (*ListResult, error, int) {
     }
   }
 
-  result := h.mapFileInfosToListResult(files, filepath, loc)
+  result := h.mapFileInfosToListResult(files, dirPath, loc)
   return result, nil, 0
 }
 
-func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentpath string, loc *time.Location) *ListResult {
+func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath string, loc *time.Location) *ListResult {
   n := len(files)
   list := make([]ListItem, 0, n)
   i := 0
   for _, f := range files {
     if h.keepFileInList(f) {
       list = list[:i+1]
-      h.mapFileInfoToListItem(f, &list[i], parentpath, loc)
+      h.mapFileInfoToListItem(f, &list[i], parentPath, loc)
       i = i + 1
     }
   }
@@ -118,7 +118,7 @@ func (h *Handler) keepFileInList(f os.FileInfo) bool {
   return false;
 }
 
-func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentpath string, loc *time.Location) {
+func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPath string, loc *time.Location) {
   item.Name = f.Name()
   item.IsDir = f.IsDir()
   item.Size = f.Size()
@@ -128,16 +128,16 @@ func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentpat
     t = t.In(loc)
   }
   item.ModTimeStr = t.Format(timeFormat)
-  h.loadTextFile(item, parentpath)
+  h.loadTextFile(item, parentPath)
 }
 
-func (h *Handler) loadTextFile(item *ListItem, parentpath string) {
+func (h *Handler) loadTextFile(item *ListItem, parentPath string) {
   var textpath string
   if item.IsDir {
-    textpath = fmt.Sprintf("%s/%s/summary.txt", parentpath, item.Name)
+    textpath = fmt.Sprintf("%s/%s/summary.txt", parentPath, item.Name)
   } else {
     textname := fmt.Sprintf("%s.txt", strings.TrimSuffix(item.Name, filepath.Ext(item.Name)))
-    textpath = fmt.Sprintf("%s/%s", parentpath, textname)
+    textpath = fmt.Sprintf("%s/%s", parentPath, textname)
   }
   b, err := ioutil.ReadFile(textpath)
   if err != nil {
@@ -151,8 +151,8 @@ func (h *Handler) loadTextFile(item *ListItem, parentpath string) {
 }
 
 func (h *Handler) Image(path string, width, height, rot int) (image.Image, error, int) {
-  filepath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
-  f, err := os.Open(filepath)
+  imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  f, err := os.Open(imageFilePath)
   if err != nil {
     return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
   }
@@ -161,6 +161,11 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
   im, _, err := image.Decode(f)
   if err != nil {
     return nil, fmt.Errorf("failed to decode image file: %v", err), http.StatusBadRequest
+  }
+
+  rot = rot + h.rotationFromIndex(imageFilePath)
+  if ((rot + 360) / 90) % 2 == 1 {
+    width, height = height, width
   }
 
   imRect := im.Bounds()
@@ -180,6 +185,7 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
     }
     im = imaging.Resize(im, width, height, imaging.NearestNeighbor)
   }
+
   if rot != 0 {
     im = imaging.Rotate(im, float64(rot), color.Black)
   }
@@ -188,8 +194,8 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
 }
 
 func (h *Handler) Text(path string) ([]byte, error, int) {
-  filepath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
-  b, err := ioutil.ReadFile(filepath)
+  textFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  b, err := ioutil.ReadFile(textFilePath)
   if err != nil {
     return nil, fmt.Errorf("failed to read file: %v", err), http.StatusNotFound
   }
