@@ -29,6 +29,11 @@ interface NavItem {
   textError: string;
 }
 
+class KeyFunc {
+  desc: string;
+  f: () => void;
+}
+
 @Polymer.decorators.customElement('mim-nav')
 class MimNav extends Polymer.Element {
 
@@ -44,8 +49,11 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Number})
   selectedIndex: number;
 
+  keyMap: {[key: string]: KeyFunc};
+
   ready() {
     super.ready();
+    this.initKeyMap();
     this.queryApiList('');
   }
 
@@ -208,13 +216,27 @@ class MimNav extends Polymer.Element {
     }
   }
 
+  initKeyMap() {
+    this.keyMap = {};
+    this.addKey('ArrowDown', 'Display the next image',
+        this.selectNext.bind(this));
+    this.addKey('ArrowUp', 'Display the previous image',
+        this.selectPrevious.bind(this));
+  }
+
+  addKey(key: string, desc: string, f: () => void) {
+    const keyFunc = new KeyFunc();
+    keyFunc.desc = desc;
+    keyFunc.f = f;
+    this.keyMap[key] = keyFunc;
+  }
+
   onMimKey(e: any) {
     console.log('nav mimkey', e);
     const key = e.detail.key;
-    if (key === 'ArrowDown') {
-      this.selectNext();
-    } else if (key === 'ArrowUp') {
-      this.selectPrevious();
+    const keyFunc = this.keyMap[key];
+    if (keyFunc) {
+      keyFunc.f();
     }
   }
 
