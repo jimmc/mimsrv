@@ -29,11 +29,6 @@ interface NavItem {
   textError: string;
 }
 
-class KeyFunc {
-  desc: string;
-  f: () => void;
-}
-
 @Polymer.decorators.customElement('mim-nav')
 class MimNav extends Polymer.Element {
 
@@ -49,11 +44,8 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Number})
   selectedIndex: number;
 
-  keyMap: {[key: string]: KeyFunc};
-
   ready() {
     super.ready();
-    this.initKeyMap();
     this.queryApiList('');
   }
 
@@ -213,47 +205,6 @@ class MimNav extends Polymer.Element {
         this.selectedIndex < this.rows.length &&
         this.rows[this.selectedIndex - 1].level === this.rows[this.selectedIndex].level) {
       this.selectAt(this.selectedIndex - 1);
-    }
-  }
-
-  showKeyBindings() {
-    var keys = [];
-    for (var key in this.keyMap) {
-      if (this.keyMap.hasOwnProperty(key)) {
-        keys.push(key);
-      }
-    }
-    keys.sort();
-    const helpString = keys.map((key: any) => {
-      const entry = this.keyMap[key];
-      return key + ": " + entry.desc + "<br>";
-    }).join('\n');
-    this.showDialogHtml(helpString);
-  }
-
-  initKeyMap() {
-    this.keyMap = {};
-    this.addKey('ArrowDown', 'Display the next image',
-        this.selectNext.bind(this));
-    this.addKey('ArrowUp', 'Display the previous image',
-        this.selectPrevious.bind(this));
-    this.addKey('?', 'List key bindings',
-        this.showKeyBindings.bind(this));
-  }
-
-  addKey(key: string, desc: string, f: () => void) {
-    const keyFunc = new KeyFunc();
-    keyFunc.desc = desc;
-    keyFunc.f = f;
-    this.keyMap[key] = keyFunc;
-  }
-
-  onMimKey(e: any) {
-    console.log('nav mimkey', e);
-    const key = e.detail.key;
-    const keyFunc = this.keyMap[key];
-    if (keyFunc) {
-      keyFunc.f();
     }
   }
 
