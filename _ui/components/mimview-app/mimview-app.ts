@@ -21,20 +21,12 @@ class MimviewApp extends Polymer.Element {
   }
 
   showDialogHtml(html: string) {
-    if (html === this.dialogContent) {
-      this.hideDialog();
-    } else {
-      this.dialogContent = html;
-      this.$.dialogContent.innerHTML = html;
-    }
+    this.dialogContent = html;
+    this.$.dialogContent.innerHTML = html;
   }
 
   showDialog(text: string) {
-    if (text === this.dialogContent) {
-      this.hideDialog();
-    } else {
-      this.dialogContent = text;
-    }
+    this.dialogContent = text;
   }
 
   hideDialog() {
@@ -90,9 +82,15 @@ class MimviewApp extends Polymer.Element {
   }
 
   onMimKey(e: any) {
-    console.log('nav mimkey', e);
     const key = e.detail.key;
+    const modifierKeys = ['Shift', 'Control', 'Meta', 'Alt', 'CapsLock'];
+    if (modifierKeys.indexOf(key) >= 0) {
+      // Ignore presses of the modifier keys
+      return;
+    }
+    // console.log("Key: ", key);
     const keyFunc = this.keyMap[key];
+    this.hideDialog();
     if (keyFunc) {
       keyFunc.f();
     }
