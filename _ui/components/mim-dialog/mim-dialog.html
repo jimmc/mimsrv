@@ -1,26 +1,28 @@
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<dom-module id="mim-image">
+<dom-module id="mim-dialog">
   <template>
     <style>
       :host {
       }
-      #imgContainer {
+      #container {
         height: 100%;
         width: 100%;
       }
-      #img {
+      #dialog {
         display: block;
-        margin: auto;
+        padding: 3px;
+        width: max-content;
+        border: 2px solid black;
       }
     </style>
-    <div id="imgContainer" tabindex=0>
-      <a id="imgWrapper">
-        <img id="img" src="[[imgsrc]]">
-      </a>
+    <div id="container">
+      <div id="dialog">
+        <slot name="content"></slot>
+      </div>
     </div>
   </template>
 </dom-module>
 
-<script src="mim-image.js"></script>
+<script src="mim-dialog.js"></script>

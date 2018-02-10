@@ -1,6 +1,7 @@
 {
   "entrypoint": "index.html",
   "fragments": [
+    "components/mim-dialog/mim-dialog.html",
     "components/mim-image/mim-image.html",
     "components/mim-nav/mim-nav.html",
     "components/mimview-app/mimview-app.html"

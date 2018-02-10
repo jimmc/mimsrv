@@ -1,4 +1,5 @@
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../components/mim-dialog/mim-dialog.html">
 <link rel="import" href="../../components/mim-image/mim-image.html">
 <link rel="import" href="../../components/mim-nav/mim-nav.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
@@ -24,17 +25,40 @@
         overflow: scroll;
         white-space: nowrap;
       }
-      #image {
+      #display {
         flex-grow: 1;
         overflow: scroll;
         background-color: #eee;
         height: 100%;
         width: 80%;
+        position: relative;
+      }
+      #dialog {
+        position: absolute;
+        margin: auto;
+        width: max-content;
+        bottom: 50%;
+        left: 0px;
+        right: 0px;
+        background-color: white;
+        z-index: 1;     // Put it in front of the image
+      }
+      #image {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        height: 100%;
+        width: 100%;
       }
     </style>
     <div id="main">
       <mim-nav id="nav" imgsrc="{{imgsrc}}" imgsize="[[imgsize]]"></mim-nav>
-      <mim-image id="image" imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
+      <div id="display">
+        <mim-dialog id="dialog" hidden$={{!dialogContent}}>
+          <div slot="content" id="dialogContent">[[dialogContent]]</div>
+        </mim-dialog>
+        <mim-image id="image" imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
+      </div>
     </div>
   </template>
 </dom-module>

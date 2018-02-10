@@ -23,7 +23,7 @@ class MimImage extends Polymer.Element {
     super.ready();
     window.addEventListener('resize', () => this.compressResizeEvents());
     this.handleResize();
-    this.$.imgWrapper.addEventListener('keydown', this.keydown.bind(this));
+    this.$.imgContainer.addEventListener('keydown', this.keydown.bind(this));
   }
 
   // When the user resizes the window, we get a stream of resize events.

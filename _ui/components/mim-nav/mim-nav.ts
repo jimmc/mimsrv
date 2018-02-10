@@ -216,12 +216,29 @@ class MimNav extends Polymer.Element {
     }
   }
 
+  showKeyBindings() {
+    var keys = [];
+    for (var key in this.keyMap) {
+      if (this.keyMap.hasOwnProperty(key)) {
+        keys.push(key);
+      }
+    }
+    keys.sort();
+    const helpString = keys.map((key: any) => {
+      const entry = this.keyMap[key];
+      return key + ": " + entry.desc + "<br>";
+    }).join('\n');
+    this.showDialogHtml(helpString);
+  }
+
   initKeyMap() {
     this.keyMap = {};
     this.addKey('ArrowDown', 'Display the next image',
         this.selectNext.bind(this));
     this.addKey('ArrowUp', 'Display the previous image',
         this.selectPrevious.bind(this));
+    this.addKey('?', 'List key bindings',
+        this.showKeyBindings.bind(this));
   }
 
   addKey(key: string, desc: string, f: () => void) {
@@ -262,5 +279,15 @@ class MimNav extends Polymer.Element {
     } else {
       this.imgsrc = '';
     }
+  }
+
+  showDialogHtml(html: string) {
+    const detail = {html: html};
+    this.dispatchEvent(new CustomEvent('mimdialog', {detail: detail}));
+  }
+
+  showDialog(msg: string) {
+    const detail = {message: msg};
+    this.dispatchEvent(new CustomEvent('mimdialog', {detail: detail}));
   }
 }
