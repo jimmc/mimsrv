@@ -23,14 +23,17 @@ class MimviewApp extends Polymer.Element {
   showDialogHtml(html: string) {
     this.dialogContent = html;
     this.$.dialogContent.innerHTML = html;
+    this.$.dialog.open();
   }
 
   showDialog(text: string) {
     this.dialogContent = text;
+    this.$.dialog.open();
   }
 
   hideDialog() {
     this.dialogContent = "";
+    this.$.dialog.close();
   }
 
   onMimDialog(e: any) {
