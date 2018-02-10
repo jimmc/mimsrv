@@ -16,8 +16,8 @@ class MimviewApp extends Polymer.Element {
   ready() {
     super.ready();
     this.initKeyMap();
-    this.$.image.addEventListener('mimkey', this.onMimKey.bind(this));
     this.$.nav.addEventListener('mimdialog', this.onMimDialog.bind(this));
+    this.addEventListener('keydown', this.keydown.bind(this));
   }
 
   showDialogHtml(html: string) {
@@ -81,8 +81,9 @@ class MimviewApp extends Polymer.Element {
     this.keyMap[key] = keyFunc;
   }
 
-  onMimKey(e: any) {
-    const key = e.detail.key;
+  keydown(e: any) {
+    e.preventDefault(); // Prevent list from doing default scrolling on arrows
+    const key = e.key;
     const modifierKeys = ['Shift', 'Control', 'Meta', 'Alt', 'CapsLock'];
     if (modifierKeys.indexOf(key) >= 0) {
       // Ignore presses of the modifier keys
