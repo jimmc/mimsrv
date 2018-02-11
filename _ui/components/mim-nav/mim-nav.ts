@@ -167,6 +167,13 @@ class MimNav extends Polymer.Element {
   }
 
   rowClicked(e: any) {
+    if (e.clientX == 0 && e.clientY == 0) {
+      // We get an on-click for an Enter key as well as a mouse click.
+      // We want to handle them separately, so we check here to see if this
+      // is a real mouse-click. If not, we ignore it here, and process it
+      // separately elsewhere.
+      return;
+    }
     this.selectAt(e.model.index);
   }
 
@@ -182,13 +189,21 @@ class MimNav extends Polymer.Element {
     }
     if (row.isDir) {
       this.setImageSource('');
-      if (row.expanded) {
-        this.collapseRowAt(index);
-      } else {
-        this.queryApiList(row.path);
-      }
     } else {
       this.setImageSource(row.path);
+    }
+  }
+
+  toggleCurrent() {
+    if (this.selectedIndex >= 0) {
+      const row = this.rows[this.selectedIndex];
+      if (row.isDir) {
+        if (row.expanded) {
+          this.collapseRowAt(this.selectedIndex);
+        } else {
+          this.queryApiList(row.path);
+        }
+      }
     }
   }
 

@@ -44,6 +44,10 @@ class MimviewApp extends Polymer.Element {
     }
   }
 
+  toggleCurrent() {
+    this.$.nav.toggleCurrent();
+  }
+
   selectNext() {
     this.$.nav.selectNext();
   }
@@ -73,6 +77,8 @@ class MimviewApp extends Polymer.Element {
         this.selectNext.bind(this));
     this.addKey('ArrowUp', 'Display the previous image',
         this.selectPrevious.bind(this));
+    this.addKey('Enter', 'Open or close the current folder',
+        this.toggleCurrent.bind(this));
     this.addKey('?', 'List key bindings',
         this.showKeyBindings.bind(this));
   }
