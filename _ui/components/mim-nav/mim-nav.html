@@ -37,6 +37,11 @@
         color: red;
         white-space: normal;
       }
+      paper-item {
+        --paper-item-focused-before: {
+          background-color: white;
+        }
+      }
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
