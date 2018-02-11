@@ -49,6 +49,7 @@ class MimNav extends Polymer.Element {
     this.queryApiList('');
   }
 
+  // Returns the delta count for this.rows
   async queryApiList(dir: string) {
     const listUrl = "/api/list/" + dir;
     const response = await ApiManager.xhrJson(listUrl);
@@ -179,14 +180,8 @@ class MimNav extends Polymer.Element {
 
   selectAt(index: number) {
     this.selectedIndex = index;
+    this.scrollRowIntoView(index);
     const row = this.rows[index];
-    const rowElements = this.$.listContainer.querySelectorAll('.nav-item');
-    const rowElement = rowElements[index];
-    if (rowElement.offsetTop < this.scrollTop) {
-      rowElement.scrollIntoView(true);
-    } else if (rowElement.offsetTop + rowElement.offsetHeight > this.scrollTop + this.offsetHeight) {
-      rowElement.scrollIntoView(false);
-    }
     if (row.isDir) {
       this.setImageSource('');
     } else {
@@ -194,33 +189,117 @@ class MimNav extends Polymer.Element {
     }
   }
 
-  toggleCurrent() {
+  scrollRowIntoView(index: number) {
+    if (index < 0 || index >= this.rows.length) {
+      return;
+    }
+    const rowElements = this.$.listContainer.querySelectorAll('.nav-item');
+    const rowElement = rowElements[index];
+    if (rowElement.offsetTop < this.scrollTop) {
+      rowElement.scrollIntoView(true);
+    } else if (rowElement.offsetTop + rowElement.offsetHeight > this.scrollTop + this.offsetHeight) {
+      rowElement.scrollIntoView(false);
+    }
+  }
+
+  async toggleCurrent() {
     if (this.selectedIndex >= 0) {
       const row = this.rows[this.selectedIndex];
       if (row.isDir) {
+        const preRowCount = this.rows.length;
         if (row.expanded) {
           this.collapseRowAt(this.selectedIndex);
         } else {
-          this.queryApiList(row.path);
+          await this.queryApiList(row.path);
         }
+        const postRowCount = this.rows.length;
+        return postRowCount - preRowCount;
+      }
+    }
+    return 0
+  }
+
+  selectNext() {
+    if (this.selectedIndex >= 0 && this.selectedIndex < this.rows.length - 1) {
+      if (!this.rows[this.selectedIndex].isDir) {
+        // If we are currently viewing a file, then we want to move to the
+        // next file, even if it is in another folder.
+        this.selectNextFile();
+      } else {
+        this.scrollRowIntoView(this.selectedIndex + 2);
+        this.selectAt(this.selectedIndex + 1);
       }
     }
   }
 
-  selectNext() {
-    if (this.selectedIndex >= 0 &&
-        this.selectedIndex < this.rows.length - 1 &&
-        this.rows[this.selectedIndex + 1].level === this.rows[this.selectedIndex].level) {
-      this.selectAt(this.selectedIndex + 1);
+  async selectNextFile() {
+    if (this.selectedIndex >= 0 && this.selectedIndex < this.rows.length - 1) {
+      this.selectedIndex = this.selectedIndex + 1;
+      const row = this.rows[this.selectedIndex];
+      if (row.isDir) {
+        this.setImageSource('');
+        if (!row.expanded) {
+          await this.toggleCurrent();
+        }
+        this.selectNextFile();
+      } else {
+        this.scrollRowIntoView(this.selectedIndex + 1);
+        this.selectAt(this.selectedIndex);
+      }
     }
   }
 
   selectPrevious() {
-    if (this.selectedIndex > 0 &&
-        this.selectedIndex < this.rows.length &&
-        this.rows[this.selectedIndex - 1].level === this.rows[this.selectedIndex].level) {
-      this.selectAt(this.selectedIndex - 1);
+    if (this.selectedIndex > 0 && this.selectedIndex < this.rows.length) {
+      if (!this.rows[this.selectedIndex].isDir) {
+        // If we are currently viewing a file, then we want to move to the
+        // previous file, even if it is in another folder.
+        this.selectPreviousFile();
+      } else {
+        this.scrollRowIntoView(this.selectedIndex - 2);
+        this.selectAt(this.selectedIndex - 1);
+      }
     }
+  }
+
+  async selectPreviousFile() {
+    if (this.selectedIndex > 0 && this.selectedIndex < this.rows.length) {
+      const row = this.rows[this.selectedIndex - 1];
+      if (!row.isDir) {
+        this.scrollRowIntoView(this.selectedIndex);
+        this.scrollRowIntoView(this.selectedIndex - 2);
+        return this.selectAt(this.selectedIndex - 1);
+      }
+      this.setImageSource('');
+      const prevIndexUnexpanded = this.findPreviousUnexpandedOrFile(
+          this.selectedIndex);
+      if (prevIndexUnexpanded >= 0) {
+        const row = this.rows[prevIndexUnexpanded];
+        if (!row.isDir) {
+          this.scrollRowIntoView(prevIndexUnexpanded + 1);
+          this.scrollRowIntoView(prevIndexUnexpanded - 1);
+          return this.selectAt(prevIndexUnexpanded);
+        }
+        const preRowCount = this.rows.length;
+        await this.queryApiList(row.path);
+        const postRowCount = this.rows.length;
+        const deltaRowCount = postRowCount - preRowCount;
+        this.selectedIndex = this.selectedIndex + deltaRowCount;
+        this.selectPreviousFile();
+      }
+    }
+  }
+
+  findPreviousUnexpandedOrFile(index: number) {
+    index = index - 1;
+    while (index >= 0) {
+      const row = this.rows[index];
+      if (!row.isDir || !row.expanded) {
+        return index;
+      }
+      index = index - 1;
+    }
+    return index;
   }
 
   @Polymer.decorators.observe('imgsize')
