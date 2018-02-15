@@ -6,6 +6,7 @@ import (
   "log"
   "net/http"
   "os"
+  "strconv"
 
   "github.com/jimmc/mimsrv/api"
   "github.com/jimmc/mimsrv/auth"
@@ -13,6 +14,7 @@ import (
 )
 
 type config struct {
+  port int
   mimViewRoot string
   contentRoot string
   passwordFilePath string
@@ -22,6 +24,7 @@ type config struct {
 func main() {
   config := &config{}
 
+  flag.IntVar(&config.port, "port", 8080, "port on which to listen for connections")
   flag.StringVar(&config.mimViewRoot, "mimviewroot", "", "location of mimview ui root (build/default)")
   flag.StringVar(&config.contentRoot, "contentroot", "", "root directory for content (photos)")
   flag.StringVar(&config.passwordFilePath, "passwordfile", "", "location of password file")
@@ -81,8 +84,8 @@ func main() {
   mux.Handle("/auth/", authHandler.ApiHandler)
   mux.HandleFunc("/", redirectToUi)
 
-  fmt.Printf("mimsrv serving on port 8080\n")
-  log.Fatal(http.ListenAndServe(":8080", mux))
+  fmt.Printf("mimsrv serving on port %v\n", config.port)
+  log.Fatal(http.ListenAndServe(":"+strconv.Itoa(config.port), mux))
 }
 
 func redirectToUi(w http.ResponseWriter, r *http.Request) {
