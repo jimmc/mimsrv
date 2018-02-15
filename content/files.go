@@ -171,8 +171,7 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
   imRect := im.Bounds()
   imWidth := imRect.Max.X - imRect.Min.X
   imHeight := imRect.Max.Y - imRect.Min.Y
-  log.Printf("image size: w=%d, h=%d; resize parameters w=%d, h=%d",
-      imWidth, imHeight, width, height)
+  // log.Printf("image size: w=%d, h=%d; resize parameters w=%d, h=%d", imWidth, imHeight, width, height)
   if width != 0 || height != 0 {
     if width != 0 && height != 0 {
       // We always want to preserve the aspect ratio, but fit the resulting
