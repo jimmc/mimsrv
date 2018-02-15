@@ -5,21 +5,60 @@ import (
   "fmt"
   "log"
   "net/http"
+  "os"
 
   "github.com/jimmc/mimsrv/api"
+  "github.com/jimmc/mimsrv/auth"
   "github.com/jimmc/mimsrv/content"
 )
 
 type config struct {
   mimViewRoot string
   contentRoot string
+  passwordFilePath string
+  maxClockSkewSeconds int
 }
 
 func main() {
   config := &config{}
+
   flag.StringVar(&config.mimViewRoot, "mimviewroot", "", "location of mimview ui root (build/default)")
   flag.StringVar(&config.contentRoot, "contentroot", "", "root directory for content (photos)")
+  flag.StringVar(&config.passwordFilePath, "passwordfile", "", "location of password file")
+  flag.IntVar(&config.maxClockSkewSeconds, "maxclockskewseconds", 2, "max allowed skew between client and server")
+
+  createPasswordP := flag.Bool("createPasswordFile", false, "create an empty password file")
+  updatePasswordP := flag.String("updatePassword", "", "update password for named user")
+
   flag.Parse()
+
+  if config.passwordFilePath == "" {
+    log.Fatal("--passwordfile is required")
+  }
+  authHandler := auth.NewHandler(&auth.Config{
+    Prefix: "/auth/",
+    PasswordFilePath: config.passwordFilePath,
+    MaxClockSkewSeconds: config.maxClockSkewSeconds,
+  })
+  if (*createPasswordP) {
+    err := authHandler.CreatePasswordFile()
+    if err != nil {
+      fmt.Printf("Error creating password file: %v\n", err)
+      os.Exit(1)
+    }
+    fmt.Printf("Password file created at %s\n", config.passwordFilePath)
+    os.Exit(0)
+  }
+  if (*updatePasswordP != "") {
+    err := authHandler.UpdateUserPassword(*updatePasswordP)
+    if err != nil {
+      fmt.Printf("Error updating password for %s: %v\n", *updatePasswordP, err)
+      os.Exit(1)
+    }
+    fmt.Printf("Password updated for %s\n", *updatePasswordP)
+    os.Exit(0)
+  }
+
   if config.mimViewRoot == "" {
     log.Fatal("--mimviewroot is required")
   }
@@ -33,11 +72,13 @@ func main() {
     ContentRoot: config.contentRoot,
   })
   uiFileHandler := http.FileServer(http.Dir(config.mimViewRoot))
-  mux.Handle("/ui/", http.StripPrefix("/ui/", uiFileHandler))
-  mux.Handle("/api/", api.NewHandler(&api.Config{
+  apiHandler := api.NewHandler(&api.Config{
     Prefix: "/api/",
     ContentHandler: contentHandler,
-  }))
+  })
+  mux.Handle("/ui/", http.StripPrefix("/ui/", uiFileHandler))
+  mux.Handle("/api/", authHandler.RequireAuth(apiHandler))
+  mux.Handle("/auth/", authHandler.ApiHandler)
   mux.HandleFunc("/", redirectToUi)
 
   fmt.Printf("mimsrv serving on port 8080\n")
