@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../components/mim-dialog/mim-dialog.html">
 <link rel="import" href="../../components/mim-image/mim-image.html">
+<link rel="import" href="../../components/mim-login/mim-login.html">
 <link rel="import" href="../../components/mim-nav/mim-nav.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
@@ -10,6 +11,9 @@
     <style>
       :host {
         height: 100%;
+      }
+      [hidden] {
+        display: none !important;
       }
       #main {
         display: -webkit-flex;  /* Safari */
@@ -41,15 +45,16 @@
         width: 100%;
       }
     </style>
-    <div id="main">
-      <mim-nav id="nav" imgsrc="{{imgsrc}}" imgsize="[[imgsize]]"></mim-nav>
+    <mim-dialog id="dialog" hidden$={{!dialogContent}}>
+      <div slot="content" id="dialogContent">[[dialogContent]]</div>
+    </mim-dialog>
+    <div id="main" hidden$="[[!loggedIn]]">
+      <mim-nav id="nav" imgsrc="{{imgsrc}}" imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
       <div id="display">
-        <mim-dialog id="dialog" hidden$={{!dialogContent}}>
-          <div slot="content" id="dialogContent">[[dialogContent]]</div>
-        </mim-dialog>
         <mim-image id="image" imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
       </div>
     </div>
+    <mim-login id="mimlogin" hidden$="[[loggedIn]]"></mim-login>
   </template>
 </dom-module>
 

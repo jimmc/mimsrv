@@ -32,6 +32,9 @@ interface NavItem {
 @Polymer.decorators.customElement('mim-nav')
 class MimNav extends Polymer.Element {
 
+  @Polymer.decorators.property({type: Boolean, notify: true})
+  loggedIn: boolean;
+
   @Polymer.decorators.property({type: String, notify: true})
   imgsrc: string;
 
@@ -51,9 +54,15 @@ class MimNav extends Polymer.Element {
 
   // Returns the delta count for this.rows
   async queryApiList(dir: string) {
-    const listUrl = "/api/list/" + dir;
-    const response = await ApiManager.xhrJson(listUrl);
-    this.handleListResponse(dir, response);
+    try {
+      const listUrl = "/api/list/" + dir;
+      const response = await ApiManager.xhrJson(listUrl);
+      this.loggedIn = true;
+      this.handleListResponse(dir, response);
+    } catch (e) {
+      this.loggedIn = false;
+      console.log("Query failed:", e);
+    }
   }
 
   handleListResponse(dir: string, list: ListResponse) {

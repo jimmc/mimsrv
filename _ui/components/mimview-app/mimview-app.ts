@@ -16,8 +16,8 @@ class MimviewApp extends Polymer.Element {
   ready() {
     super.ready();
     this.initKeyMap();
-    this.$.nav.addEventListener('mimdialog', this.onMimDialog.bind(this));
-    this.addEventListener('keydown', this.keydown.bind(this));
+    this.addEventListener('mimdialog', this.onMimDialog.bind(this));
+    this.$.main.addEventListener('keydown', this.keydown.bind(this));
   }
 
   showDialogHtml(html: string) {
@@ -42,6 +42,10 @@ class MimviewApp extends Polymer.Element {
     } else {
       this.showDialog(e.detail.message);
     }
+  }
+
+  logout() {
+    this.$.mimlogin.logout();
   }
 
   toggleCurrent() {
@@ -81,6 +85,8 @@ class MimviewApp extends Polymer.Element {
         this.toggleCurrent.bind(this));
     this.addKey('?', 'List key bindings',
         this.showKeyBindings.bind(this));
+    this.addKey('x', 'Logout',
+        this.logout.bind(this));
   }
 
   addKey(key: string, desc: string, f: () => void) {
