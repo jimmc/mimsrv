@@ -1,5 +1,6 @@
 <link rel="import" href="../../modules/api-manager/api-manager.html">
 
+<link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
@@ -12,7 +13,7 @@
       }
       .nav-item {
         min-height: 0;
-        padding-left: 2px;
+        padding-left: 0px;
         border: 1px black solid;
         line-height: 1;
       }
@@ -43,14 +44,27 @@
           background-color: white;
         }
       }
+      .invisible {
+        opacity: 0;
+      }
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
         <paper-item on-click="rowClicked" class$="[[getRowClass(row, selectedIndex)]]">
-          <span>
+          <span class="spacer">
             <template is="dom-repeat" items="[[indentsForRow(row)]]">
               &nbsp;
             </template>
+            <span hidden$=[[!row.isDir]]>
+              <iron-icon icon="hardware:keyboard-arrow-right"
+                  hidden$=[[row.expanded]] on-click="rowToggled"></iron-icon>
+              <iron-icon icon="hardware:keyboard-arrow-down"
+                  hidden$=[[!row.expanded]] on-click="rowToggled"></iron-icon>
+            </span>
+            <span class="invisible" hidden$=[[row.isDir]]>
+              <!-- We put this invisible icon here to get the spacing right. -->
+              <iron-icon icon="hardware:keyboard-arrow-left"></iron-icon>
+            </span>
           </span>
           <span hidden$=[[row.isDir]]>
             <span class="path">[[row.name]]</span>

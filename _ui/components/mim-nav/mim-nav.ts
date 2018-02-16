@@ -105,7 +105,7 @@ class MimNav extends Polymer.Element {
       .concat(rows)
       .concat(this.rows.slice(nextIndex, this.rows.length));
     this.rows = updatedRows;
-    this.rows[index].expanded = true;
+    this.set(['rows', index, 'expanded'], true);
   }
 
   // Looks at the level of the row at the specified index and returns the
@@ -133,7 +133,7 @@ class MimNav extends Polymer.Element {
     const updatedRows = this.rows.slice(0, index + 1)
       .concat(this.rows.slice(nextIndex, this.rows.length));
     this.rows = updatedRows;
-    this.rows[index].expanded = false;
+    this.set(['rows', index, 'expanded'], false);
   }
 
   getRowClass(row: NavItem, selectedIndex: number) {
@@ -187,6 +187,11 @@ class MimNav extends Polymer.Element {
     this.selectAt(e.model.index);
   }
 
+  rowToggled(e: any) {
+    this.selectAt(e.model.index);
+    this.toggleCurrent();
+  }
+
   selectAt(index: number) {
     this.selectedIndex = index;
     this.scrollRowIntoView(index);
@@ -213,6 +218,7 @@ class MimNav extends Polymer.Element {
 
   async toggleCurrent() {
     if (this.selectedIndex >= 0) {
+      console.log('index:', this.selectedIndex);
       const row = this.rows[this.selectedIndex];
       if (row.isDir) {
         const preRowCount = this.rows.length;
