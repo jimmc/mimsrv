@@ -2,6 +2,7 @@
 
 <link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
@@ -47,6 +48,15 @@
       .invisible {
         opacity: 0;
       }
+      .dirloading {
+        --paper-spinner-stroke-width: 1px;
+        --paper-spinner-color: black;
+        height: 12px;
+        width: 12px;
+        margin-top: 8px;
+        margin-bottom: 1px;
+        margin-right: 12px;
+      }
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
@@ -56,10 +66,16 @@
               &nbsp;
             </template>
             <span hidden$=[[!row.isDir]]>
-              <iron-icon icon="hardware:keyboard-arrow-right"
-                  hidden$=[[row.expanded]] on-click="rowToggled"></iron-icon>
-              <iron-icon icon="hardware:keyboard-arrow-down"
-                  hidden$=[[!row.expanded]] on-click="rowToggled"></iron-icon>
+              <span hidden=[[!row.pending]]>
+                <paper-spinner-lite active="{{row.pending}}" class="dirloading">
+                </paper-spinner-lite>
+              </span>
+              <span hidden$=[[row.pending]]>
+                <iron-icon icon="hardware:keyboard-arrow-right"
+                    hidden$=[[row.expanded]] on-click="rowToggled"></iron-icon>
+                <iron-icon icon="hardware:keyboard-arrow-down"
+                    hidden$=[[!row.expanded]] on-click="rowToggled"></iron-icon>
+              </span>
             </span>
             <span class="invisible" hidden$=[[row.isDir]]>
               <!-- We put this invisible icon here to get the spacing right. -->

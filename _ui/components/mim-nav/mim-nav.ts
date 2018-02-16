@@ -21,6 +21,7 @@ interface NavItem {
   name: string;         // Final component of the path
   level: number;
   expanded: boolean;
+  pending: boolean;
   isDir: boolean;
   size: number;
   modTime: number;
@@ -220,12 +221,15 @@ class MimNav extends Polymer.Element {
     if (this.selectedIndex >= 0) {
       console.log('index:', this.selectedIndex);
       const row = this.rows[this.selectedIndex];
+      const rowIndex = this.selectedIndex;
       if (row.isDir) {
         const preRowCount = this.rows.length;
         if (row.expanded) {
           this.collapseRowAt(this.selectedIndex);
         } else {
+          this.set(['rows', rowIndex, 'pending'], true);
           await this.queryApiList(row.path);
+          this.set(['rows', rowIndex, 'pending'], false);
         }
         const postRowCount = this.rows.length;
         return postRowCount - preRowCount;
@@ -280,6 +284,7 @@ class MimNav extends Polymer.Element {
   async selectPreviousFile() {
     if (this.selectedIndex > 0 && this.selectedIndex < this.rows.length) {
       const row = this.rows[this.selectedIndex - 1];
+      const rowIndex = this.selectedIndex - 1;
       if (!row.isDir) {
         this.scrollRowIntoView(this.selectedIndex);
         this.scrollRowIntoView(this.selectedIndex - 2);
@@ -296,7 +301,9 @@ class MimNav extends Polymer.Element {
           return this.selectAt(prevIndexUnexpanded);
         }
         const preRowCount = this.rows.length;
+        this.set(['rows', rowIndex, 'pending'], true);
         await this.queryApiList(row.path);
+        this.set(['rows', rowIndex, 'pending'], false);
         const postRowCount = this.rows.length;
         const deltaRowCount = postRowCount - preRowCount;
         this.selectedIndex = this.selectedIndex + deltaRowCount;
