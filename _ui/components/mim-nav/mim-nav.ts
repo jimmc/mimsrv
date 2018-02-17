@@ -12,6 +12,8 @@ interface ListItem {
 }
 
 interface ListResponse {
+  IndexName: string;
+  UnfilteredFileCount: number;
   Items: ListItem[];
 }
 
@@ -28,6 +30,8 @@ interface NavItem {
   modTimeStr: string;
   text: string;
   textError: string;
+  index: string;
+  filtered: boolean;
 }
 
 @Polymer.decorators.customElement('mim-nav')
@@ -69,7 +73,7 @@ class MimNav extends Polymer.Element {
   handleListResponse(dir: string, list: ListResponse) {
     const navItems = list.Items.map(
         (listItem) => this.listToNav(listItem, dir));
-    this.updateDirRows(dir, navItems);
+    this.updateDirRows(dir, navItems, list);
   }
 
   listToNav(listItem: ListItem, dir: string): NavItem {
@@ -89,7 +93,7 @@ class MimNav extends Polymer.Element {
     } as NavItem;
   }
 
-  updateDirRows(dir: string, rows: NavItem[]) {
+  updateDirRows(dir: string, rows: NavItem[], list: ListResponse) {
     if (!dir) {
       this.rows = rows;
       return;
@@ -101,6 +105,9 @@ class MimNav extends Polymer.Element {
       console.error("Can't find entry for dir", dir);
       return;
     }
+    this.set(["rows", index, "index"], list.IndexName)
+    this.set(["rows", index, "filtered"],
+        list.UnfilteredFileCount != rows.length);
     const nextIndex = this.nextIndex(index);
     const updatedRows = this.rows.slice(0, index + 1)
       .concat(rows)

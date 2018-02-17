@@ -27,6 +27,10 @@
       .path {
         font-weight: bold;
       }
+      .index, .filtermark {
+        font-size: small;
+        font-style: italic;
+      }
       .size, .date {
         font-size: small;
       }
@@ -90,7 +94,10 @@
             <span class="textError">[[row.textError]]</span>
           </span>
           <span hidden$=[[!row.isDir]]>
-            <span class="path">[[row.path]]</span><br>
+            <span class="path">[[row.path]]</span>
+            <span class="filtermark" hidden=[[!row.filtered]]>*</span
+              ><span class="index">[[row.index]]</span>
+            <br>
             <span class="text">[[row.text]]</span>
             <span class="textError">[[row.textError]]</span>
           </span>
