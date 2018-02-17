@@ -41,6 +41,8 @@ type ListItem struct {
 }
 
 type ListResult struct {
+  IndexName string
+  UnfilteredFileCount int
   Items []ListItem
 }
 
@@ -70,6 +72,12 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   if err != nil {
     return nil, fmt.Errorf("failed to read dir: %v", err), http.StatusBadRequest
   }
+  files = h.filterOnExtension(files)
+  imageIndex := h.imageIndex(dirPath)
+  unfilteredFileCount := len(files)
+  if imageIndex != nil {
+    files = imageIndex.filter(files)
+  }
   sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 
   var loc *time.Location
@@ -88,19 +96,31 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   }
 
   result := h.mapFileInfosToListResult(files, dirPath, loc)
+  result.UnfilteredFileCount = unfilteredFileCount
+  if imageIndex != nil {
+    result.IndexName = imageIndex.indexName
+  }
   return result, nil, 0
+}
+
+func (h *Handler) filterOnExtension(files []os.FileInfo) []os.FileInfo {
+  filteredFiles := make([]os.FileInfo, 0, len(files))
+  i := 0
+  for _, f := range files {
+    if h.keepFileInList(f) {
+      filteredFiles = filteredFiles[:i+1]
+      filteredFiles[i] = f
+      i = i + 1
+    }
+  }
+  return filteredFiles
 }
 
 func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath string, loc *time.Location) *ListResult {
   n := len(files)
-  list := make([]ListItem, 0, n)
-  i := 0
-  for _, f := range files {
-    if h.keepFileInList(f) {
-      list = list[:i+1]
-      h.mapFileInfoToListItem(f, &list[i], parentPath, loc)
-      i = i + 1
-    }
+  list := make([]ListItem, n, n)
+  for i, f := range files {
+    h.mapFileInfoToListItem(f, &list[i], parentPath, loc)
   }
   return &ListResult{
     Items: list,

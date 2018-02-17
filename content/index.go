@@ -3,11 +3,61 @@ package content
 import (
   "fmt"
   "io/ioutil"
+  "os"
   "path/filepath"
   "strings"
 )
 
+type imageEntry struct {
+  filename string
+  rotation string
+}
+
 type ImageIndex struct {
+  indexName string
+  entries map[string]*imageEntry
+}
+
+/* Reads the image index in the specified directory, or nil
+ * if no index file.
+ */
+func (h *Handler) imageIndex(dir string) *ImageIndex {
+  indexName := "index.mpr"
+  indexPath := fmt.Sprintf("%s/%s", dir, indexName)
+  b, err := ioutil.ReadFile(indexPath)
+  if err != nil {
+    return nil;
+  }
+
+  indexText := string(b)
+  indexLines := strings.Split(indexText, "\n")
+
+  entries := make(map[string]*imageEntry)
+  for i := range indexLines {
+    fields := strings.Split(indexLines[i], ";")
+    filename := fields[0]
+    entry := &imageEntry{
+      filename: filename,
+    }
+    if len(fields) > 1 {
+      entry.rotation = fields[1]
+    }
+    entries[filename] = entry
+  }
+  return &ImageIndex{
+    indexName: indexName,
+    entries: entries,
+  }
+}
+
+func (i *ImageIndex) filter(files []os.FileInfo) []os.FileInfo {
+  filteredFiles := make([]os.FileInfo, 0, len(files))
+  for _, f := range(files) {
+    if i.entries[f.Name()] != nil {
+      filteredFiles = append(filteredFiles, f)
+    }
+  }
+  return filteredFiles
 }
 
 /* Returns an integer multiple of 90 representing the rotation of the
@@ -19,7 +69,8 @@ type ImageIndex struct {
 func (h *Handler) rotationFromIndex(imageFilePath string) int {
   base := filepath.Base(imageFilePath)
   dir := filepath.Dir(imageFilePath)
-  indexPath := fmt.Sprintf("%s/index.mpr", dir)
+  indexName := "index.mpr"
+  indexPath := fmt.Sprintf("%s/%s", dir, indexName)
   b, err := ioutil.ReadFile(indexPath)
   if err != nil {
     // Could be file-not-found, we could check for that and log if something else.
