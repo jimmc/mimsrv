@@ -1,10 +1,16 @@
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
+<link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../components/mim-dialog/mim-dialog.html">
 <link rel="import" href="../../components/mim-image/mim-image.html">
 <link rel="import" href="../../components/mim-login/mim-login.html">
 <link rel="import" href="../../components/mim-nav/mim-nav.html">
-<link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
-<link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <dom-module id="mimview-app">
   <template>
@@ -24,8 +30,36 @@
         -webkit-flex-warp: nowrap;      /* Safari */
         height: 100%;
       }
-      #nav {
+      #leftbar {
+        display: -webkit-flex;  /* Safari */
+        display: flex;
+        flex-direction: column;
+        -webkit-flex-direction: column;    /* Safari */
+        flex-wrap: nowrap;
+        -webkit-flex-warp: nowrap;      /* Safari */
         width: 20%;
+      }
+      #menu {
+        background-color: pink;
+        height: 20px;
+        min-height: 20px;
+        border: 1px black solid;
+      }
+      #menu paper-menu-button {
+        padding: 0px;
+      }
+      #menu paper-menu-button paper-icon-button {
+        padding: 0px;
+        height: 20px;
+      }
+      #menuselection paper-item {
+        min-height: 20px;
+      }
+      #menuselection paper-item:hover {
+        font-weight: bold;
+      }
+      #nav {
+        flex-grow: 1;
         overflow: scroll;
         white-space: nowrap;
       }
@@ -49,7 +83,19 @@
       <div slot="content" id="dialogContent">[[dialogContent]]</div>
     </mim-dialog>
     <div id="main" hidden$="[[!loggedIn]]">
-      <mim-nav id="nav" imgsrc="{{imgsrc}}" imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
+      <div id="leftbar">
+        <div id="menu">
+	  <paper-menu-button id="menubutton">
+	    <paper-icon-button icon="menu" slot="dropdown-trigger" alt="menu">
+            </paper-icon-button>
+	    <paper-listbox slot="dropdown-content" id="menuselection" multi>
+	      <paper-item on-click="helpClicked">Help</paper-item>
+	      <paper-item on-click="logoutClicked">Logout</paper-item>
+	    </paper-listbox>
+	  </paper-menu-button>
+        </div>
+        <mim-nav id="nav" imgsrc="{{imgsrc}}" imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
+      </div>
       <div id="display">
         <mim-image id="image" imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
       </div>

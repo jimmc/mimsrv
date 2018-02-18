@@ -44,6 +44,20 @@ class MimviewApp extends Polymer.Element {
     }
   }
 
+  resetMenu(item: number) {
+    this.$.menuselection.select(item);
+  }
+
+  helpClicked() {
+    this.resetMenu(0);
+    this.showKeyBindings();
+  }
+
+  logoutClicked() {
+    this.resetMenu(1);
+    this.logout();
+  }
+
   logout() {
     this.$.mimlogin.logout();
   }
