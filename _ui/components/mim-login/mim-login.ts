@@ -17,6 +17,13 @@ class MimLogin extends Polymer.Element {
     this.$.password.addEventListener('keydown', this.keydown.bind(this));
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    setTimeout(() => {
+      this.$.username.focus();
+    }, 0);
+  }
+
   async login() {
     const username = this.$.username.value;
     const password = this.$.password.value;
@@ -79,6 +86,13 @@ class MimLogin extends Polymer.Element {
 
   keydown(e: any) {
     this.loginError = "";
+    if (e.key == "Enter") {
+      if (this.$.username.focused) {
+        this.$.password.focus();
+      } else if (this.$.password.focused) {
+        this.login();
+      }
+    }
   }
 
   sha256sum(s: string) {
