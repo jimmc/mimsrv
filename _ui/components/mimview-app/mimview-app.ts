@@ -11,6 +11,12 @@ class MimviewApp extends Polymer.Element {
   @Polymer.decorators.property({type: String})
   dialogContent: string = "";
 
+  @Polymer.decorators.property({type: Object})
+  imgitem: NavItem;
+
+  @Polymer.decorators.property({type: Boolean})
+  hascaption: boolean;
+
   keyMap: {[key: string]: KeyFunc};
 
   ready() {
@@ -124,5 +130,11 @@ class MimviewApp extends Polymer.Element {
     if (keyFunc) {
       keyFunc.f();
     }
+  }
+
+  @Polymer.decorators.observe('imgitem')
+  imgitemChanged() {
+    this.hascaption = !!(this.imgitem);
+    this.$.image.handleResize();
   }
 }

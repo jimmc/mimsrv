@@ -43,6 +43,9 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: String, notify: true})
   imgsrc: string;
 
+  @Polymer.decorators.property({type: Object, notify: true})
+  imgitem: NavItem | undefined;
+
   @Polymer.decorators.property({type: Object})
   imgsize: any;
 
@@ -205,9 +208,9 @@ class MimNav extends Polymer.Element {
     this.scrollRowIntoView(index);
     const row = this.rows[index];
     if (row.isDir) {
-      this.setImageSource('');
+      this.setImageRow(undefined);
     } else {
-      this.setImageSource(row.path);
+      this.setImageRow(row);
     }
   }
 
@@ -226,7 +229,6 @@ class MimNav extends Polymer.Element {
 
   async toggleCurrent() {
     if (this.selectedIndex >= 0) {
-      console.log('index:', this.selectedIndex);
       const row = this.rows[this.selectedIndex];
       const rowIndex = this.selectedIndex;
       if (row.isDir) {
@@ -263,7 +265,7 @@ class MimNav extends Polymer.Element {
       this.selectedIndex = this.selectedIndex + 1;
       const row = this.rows[this.selectedIndex];
       if (row.isDir) {
-        this.setImageSource('');
+        this.setImageRow(undefined);
         if (!row.expanded) {
           await this.toggleCurrent();
         }
@@ -297,7 +299,7 @@ class MimNav extends Polymer.Element {
         this.scrollRowIntoView(this.selectedIndex - 2);
         return this.selectAt(this.selectedIndex - 1);
       }
-      this.setImageSource('');
+      this.setImageRow(undefined);
       const prevIndexUnexpanded = this.findPreviousUnexpandedOrFile(
           this.selectedIndex);
       if (prevIndexUnexpanded >= 0) {
@@ -341,15 +343,16 @@ class MimNav extends Polymer.Element {
     }
   }
 
-  setImageSource(src: string) {
+  setImageRow(row?: NavItem) {
     let qParms = '';
+    this.imgitem = row;
     if (this.imgsize) {
       const height = this.imgsize.height;
       const width = this.imgsize.width;
       qParms = '?w=' + width + '&h=' + height;
     }
-    if (src) {
-      this.imgsrc = "/api/image" + src + qParms;
+    if (row && row.path) {
+      this.imgsrc = "/api/image" + row.path + qParms;
     } else {
       this.imgsrc = '';
     }

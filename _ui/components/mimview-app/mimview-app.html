@@ -7,6 +7,7 @@
 <link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../components/mim-caption/mim-caption.html">
 <link rel="import" href="../../components/mim-dialog/mim-dialog.html">
 <link rel="import" href="../../components/mim-image/mim-image.html">
 <link rel="import" href="../../components/mim-login/mim-login.html">
@@ -70,13 +71,19 @@
         height: 100%;
         width: 80%;
         position: relative;
+        display: -webkit-flex;  /* Safari */
+        display: flex;
+        flex-direction: column;
+        -webkit-flex-direction: column;    /* Safari */
+        flex-wrap: nowrap;
+        -webkit-flex-warp: nowrap;      /* Safari */
       }
       #image {
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        height: 100%;
-        width: 100%;
+        flex: auto;
+        overflow: hidden;
+      }
+      #caption {
+        flex: none;
       }
     </style>
     <mim-dialog id="dialog" hidden$={{!dialogContent}}>
@@ -94,10 +101,12 @@
 	    </paper-listbox>
 	  </paper-menu-button>
         </div>
-        <mim-nav id="nav" imgsrc="{{imgsrc}}" imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
+        <mim-nav id="nav" imgsrc="{{imgsrc}}" imgitem="{{imgitem}}"
+            imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
       </div>
       <div id="display">
         <mim-image id="image" imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
+        <mim-caption id="caption" hidden$=[[!hascaption]] imgitem="[[imgitem]]"></mim-caption>
       </div>
     </div>
     <mim-login id="mimlogin" hidden$="[[loggedIn]]"></mim-login>

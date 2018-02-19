@@ -22,6 +22,10 @@ class MimImage extends Polymer.Element {
   ready() {
     super.ready();
     window.addEventListener('resize', () => this.compressResizeEvents());
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
     this.handleResize();
   }
 
@@ -56,8 +60,8 @@ class MimImage extends Polymer.Element {
 
   handleResize() {
     this.lastResize = Date.now();
-    const width = this.$.imgContainer.clientWidth;
-    const height = this.$.imgContainer.clientHeight;
+    const width = this.offsetWidth;
+    const height = this.offsetHeight;
     this.imgsize = {
       width,
       height,

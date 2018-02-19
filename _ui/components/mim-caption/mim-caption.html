@@ -1,0 +1,34 @@
+<link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../components/mim-nav/mim-nav.html">
+
+<dom-module id="mim-caption">
+  <template>
+    <style>
+      :host {
+      }
+      #caption-container {
+        text-align: center;
+      }
+      .path {
+        font-weight: bold;
+      }
+      .date {
+        font-size: small;
+        font-style: italic;
+      }
+      .textError {
+        color: red;
+      }
+    </style>
+    <div id="caption-container">
+      <span class="path">[[imgitem.path]]</span>
+      <span class="date">[[imgitem.modTimeStr]]</span>
+      <br>
+      <span class="text">[[imgitem.text]]</span>
+      <span class="textError">[[imgitem.textError]]</span>
+    </div>
+  </template>
+</dom-module>
+
+<script src="mim-caption.js"></script>
