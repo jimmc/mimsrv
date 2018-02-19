@@ -75,9 +75,9 @@ class MimLogin extends Polymer.Element {
       const statusUrl = "/auth/status/";
       const response = await ApiManager.xhrJson(statusUrl);
       this.loggedIn = response.LoggedIn;
-      if (this.loggedIn != oldStatus) {
-        console.log("not logged in");
-        location.reload();
+      if (this.loggedIn != oldStatus && !this.loggedIn) {
+        console.error("not logged in");
+        location.reload();    // TODO - use a dialog to relogin without reload
       }
     } catch (e) {
       console.error("auth status call failed");
