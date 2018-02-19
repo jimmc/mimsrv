@@ -24,6 +24,7 @@ class MimviewApp extends Polymer.Element {
     this.initKeyMap();
     this.addEventListener('mimdialog', this.onMimDialog.bind(this));
     this.$.main.addEventListener('keydown', this.keydown.bind(this));
+    this.$.image.addEventListener('mimchecklogin', this.checkLogin.bind(this));
   }
 
   showDialogHtml(html: string) {
@@ -66,6 +67,10 @@ class MimviewApp extends Polymer.Element {
 
   logout() {
     this.$.mimlogin.logout();
+  }
+
+  checkLogin() {
+    this.$.mimlogin.checkStatus();
   }
 
   toggleCurrent() {

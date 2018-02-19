@@ -67,4 +67,9 @@ class MimImage extends Polymer.Element {
       height,
     } as ImageSize;
   }
+
+  errorloading() {
+    // We failed to load our image, which might mean we got auto-logged out.
+    this.dispatchEvent(new CustomEvent('mimchecklogin', {}));
+  }
 }

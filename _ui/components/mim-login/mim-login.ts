@@ -60,6 +60,23 @@ class MimLogin extends Polymer.Element {
     }
   }
 
+  // CheckStatus checks to see if we are logged in and sets our loggedIn flag
+  // accordingly.
+  async checkStatus() {
+    try {
+      const oldStatus = this.loggedIn;
+      const statusUrl = "/auth/status/";
+      const response = await ApiManager.xhrJson(statusUrl);
+      this.loggedIn = response.LoggedIn;
+      if (this.loggedIn != oldStatus) {
+        console.log("not logged in");
+        location.reload();
+      }
+    } catch (e) {
+      console.error("auth status call failed");
+    }
+  }
+
   keydown(e: any) {
     this.loginError = "";
   }
