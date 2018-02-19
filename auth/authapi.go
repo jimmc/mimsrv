@@ -1,6 +1,7 @@
 package auth
 
 import (
+  "encoding/json"
   "fmt"
   "log"
   "net/http"
@@ -12,10 +13,15 @@ const (
   tokenCookieName = "MIMSRV_TOKEN"
 )
 
+type LoginStatus struct {
+  LoggedIn bool
+}
+
 func (h *Handler) initApiHandler() {
   mux := http.NewServeMux()
   mux.HandleFunc(h.apiPrefix("login"), h.login)
   mux.HandleFunc(h.apiPrefix("logout"), h.logout)
+  mux.HandleFunc(h.apiPrefix("status"), h.status)
   h.ApiHandler = mux
 }
 
@@ -78,6 +84,23 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
   http.SetCookie(w, tokenCookie)
   w.WriteHeader(http.StatusOK)
   w.Write([]byte(`{"status": "ok"}`))
+}
+
+func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
+  token := cookieValue(r, tokenCookieName)
+  idstr := clientIdString(r)
+  loggedIn := isValidToken(token, idstr);
+  result := &LoginStatus{
+    LoggedIn: loggedIn,
+  }
+
+  b, err := json.MarshalIndent(result, "", "  ")
+  if err != nil {
+    http.Error(w, fmt.Sprintf("Failed to marshall login status: %v", err), http.StatusInternalServerError)
+    return
+  }
+  w.WriteHeader(http.StatusOK)
+  w.Write(b)
 }
 
 func clientIdString(r *http.Request) string {
