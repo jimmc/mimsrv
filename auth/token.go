@@ -29,7 +29,7 @@ func newToken(userid, idstr string) *Token {
   token := &Token{
     userid: userid,
     idstr: idstr,
-    expiry: time.Now().Add(tokenExpirationDuration),
+    expiry: timeNow().Add(tokenExpirationDuration),
   }
   keynum := rand.Intn(1000000)
   token.Key = fmt.Sprintf("%06d", keynum)
@@ -45,7 +45,7 @@ func isValidToken(tokenKey, idstr string) bool {
   if token.idstr != idstr {
     return false
   }
-  if time.Now().After(token.expiry) {
+  if timeNow().After(token.expiry) {
     return false
   }
   return true

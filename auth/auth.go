@@ -26,6 +26,10 @@ import (
   "golang.org/x/crypto/ssh/terminal"
 )
 
+var (
+  timeNow = time.Now
+)
+
 type Config struct {
   Prefix string                 // The prefix string used for our API calls
   PasswordFilePath string       // Location of our password database file
@@ -189,7 +193,7 @@ func (h *Handler) nonceIsValidAtTime(userid, nonce string, secondsSinceEpoch int
 }
 
 func (h *Handler) nonceIsValidNow(userid, nonce string, seconds int64) bool {
-  t := time.Now().Unix()
+  t := timeNow().Unix()
   delta := t - seconds
   if delta > int64(h.config.MaxClockSkewSeconds) || delta < -int64(h.config.MaxClockSkewSeconds) {
     log.Printf("now=%v, client-time=%v, skew is more than max of %v",
