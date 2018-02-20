@@ -34,15 +34,17 @@ func (h *Handler) imageIndex(dir string) *ImageIndex {
 
   entries := make(map[string]*imageEntry)
   for i := range indexLines {
-    fields := strings.Split(indexLines[i], ";")
-    filename := fields[0]
-    entry := &imageEntry{
-      filename: filename,
+    if indexLines[i] != "" {
+      fields := strings.Split(indexLines[i], ";")
+      filename := fields[0]
+      entry := &imageEntry{
+        filename: filename,
+      }
+      if len(fields) > 1 {
+        entry.rotation = fields[1]
+      }
+      entries[filename] = entry
     }
-    if len(fields) > 1 {
-      entry.rotation = fields[1]
-    }
-    entries[filename] = entry
   }
   return &ImageIndex{
     indexName: indexName,
