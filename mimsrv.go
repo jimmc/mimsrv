@@ -18,6 +18,7 @@ type config struct {
   mimViewRoot string
   contentRoot string
   passwordFilePath string
+  password string
   maxClockSkewSeconds int
 }
 
@@ -28,6 +29,7 @@ func main() {
   flag.StringVar(&config.mimViewRoot, "mimviewroot", "", "location of mimview ui root (build/default)")
   flag.StringVar(&config.contentRoot, "contentroot", "", "root directory for content (photos)")
   flag.StringVar(&config.passwordFilePath, "passwordfile", "", "location of password file")
+  flag.StringVar(&config.password, "password", "", "password for update, for testing")
   flag.IntVar(&config.maxClockSkewSeconds, "maxclockskewseconds", 2, "max allowed skew between client and server")
 
   createPasswordP := flag.Bool("createPasswordFile", false, "create an empty password file")
@@ -53,7 +55,12 @@ func main() {
     os.Exit(0)
   }
   if (*updatePasswordP != "") {
-    err := authHandler.UpdateUserPassword(*updatePasswordP)
+    var err error
+    if config.password == "" {
+      err = authHandler.UpdateUserPassword(*updatePasswordP)
+    } else {
+      err = authHandler.UpdatePassword(*updatePasswordP, config.password)
+    }
     if err != nil {
       fmt.Printf("Error updating password for %s: %v\n", *updatePasswordP, err)
       os.Exit(1)
