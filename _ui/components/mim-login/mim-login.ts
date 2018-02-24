@@ -28,13 +28,9 @@ class MimLogin extends Polymer.Element {
     const username = this.$.username.value;
     const password = this.$.password.value;
     const seconds = Math.floor(Date.now()/1000);
-    console.log("in login: username=", username, ", password=", password, ", seconds=", seconds);
     const cryptword = this.sha256sum(username + "-" + password);
-    console.log("cryptword:", cryptword);
     const shaInput = cryptword + "-" + seconds.toString();
-    console.log("shaInput:", shaInput);
     const nonce = this.sha256sum(shaInput);
-    console.log("nonce:", nonce);
     try {
       const loginUrl = "/auth/login/";
       const formData = new FormData();
