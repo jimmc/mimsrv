@@ -12,9 +12,7 @@
 package auth
 
 import (
-  "bufio"
   "crypto/sha256"
-  "encoding/csv"
   "fmt"
   "log"
   "net/http"
@@ -24,6 +22,7 @@ import (
   "time"
 
   "golang.org/x/crypto/ssh/terminal"
+  "github.com/jimmc/mimsrv/users"
 )
 
 var (
@@ -39,12 +38,16 @@ type Config struct {
 type Handler struct {
   ApiHandler http.Handler
   config *Config
-  records [][]string
+  users *users.Users
 }
 
 func NewHandler(c *Config) Handler {
   h := Handler{config: c}
-  h.loadPasswordFile()
+  err := h.loadPasswordFile()
+  if err != nil {
+    log.Printf("Error loading password file: %v", err)
+    h.users = users.Empty()
+  }
   h.initApiHandler()
   initTokens()
   return h
@@ -95,10 +98,7 @@ func (h *Handler) UpdatePassword(userid, password string) error {
     return err
   }
   cryptword := h.generateCryptword(userid, password)
-  err = h.setCryptword(userid, cryptword)
-  if err != nil {
-    return err
-  }
+  h.setCryptword(userid, cryptword)
   err = h.savePasswordFile()
   if err != nil {
     return err
@@ -107,69 +107,25 @@ func (h *Handler) UpdatePassword(userid, password string) error {
 }
 
 func (h *Handler) loadPasswordFile() error {
-  f, err := os.Open(h.config.PasswordFilePath)
+  users, err := users.LoadFile(h.config.PasswordFilePath)
   if err != nil {
-    return fmt.Errorf("error opening password file %s: %v", h.config.PasswordFilePath, err)
+    return err
   }
-  r := csv.NewReader(bufio.NewReader(f))
-
-  records, err := r.ReadAll()
-  if err != nil {
-    return fmt.Errorf("error loading password file %s: %v", h.config.PasswordFilePath, err)
-  }
-
-  h.records = records
-  log.Printf("Number of passwd records: %v\n", len(h.records))
+  h.users = users
   return nil
 }
 
 func (h *Handler) savePasswordFile() error {
-  newFilePath := h.config.PasswordFilePath + ".new"
-  f, err := os.Create(newFilePath)
-  if err != nil {
-    return fmt.Errorf("error creating new password file %s: %v", newFilePath, err)
-  }
-  w := csv.NewWriter(bufio.NewWriter(f))
-  err = w.WriteAll(h.records)
-  if err != nil {
-    return fmt.Errorf("error writing new password file %s: %v", newFilePath, err)
-  }
-  w.Flush()
-  f.Close()
-
-  backupFilePath := h.config.PasswordFilePath + "~"
-  err = os.Rename(h.config.PasswordFilePath, backupFilePath)
-  if err != nil {
-    return fmt.Errorf("error moving old file to backup path %s: %v", backupFilePath, err)
-  }
-  err = os.Rename(newFilePath, h.config.PasswordFilePath)
-  if err != nil {
-    return fmt.Errorf("error moving new file %s to become active file: %v", newFilePath, err)
-  }
-
-  return nil
+  return h.users.SaveFile(h.config.PasswordFilePath)
 }
 
-func (h *Handler) setCryptword(userid, cryptword string) error {
-  for r, record := range(h.records) {
-    if record[0] == userid {
-      h.records[r][1] = cryptword
-      return nil
-    }
-  }
-  record := []string{userid, cryptword}
-  h.records = append(h.records, record)
-  return nil
+func (h *Handler) setCryptword(userid, cryptword string) {
+  h.users.SetCryptword(userid, cryptword)
 }
 
 // Get the encrypted password for the given user from our previously-loaded password file.
 func (h *Handler) getCryptword(userid string) string {
-  for _, record := range(h.records) {
-    if record[0] == userid {
-      return record[1]
-    }
-  }
-  return ""
+  return h.users.Cryptword(userid)
 }
 
 func (h *Handler) generateCryptword(userid, password string) string {

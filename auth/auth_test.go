@@ -31,7 +31,7 @@ func TestPasswordFile(t *testing.T) {
   if err != nil {
     t.Errorf("failed to load empty password file")
   }
-  if got, want := len(h.records), 0; got != want {
+  if got, want := h.users.UserCount(), 0; got != want {
     t.Errorf("empty tmp password file got %d records, want %d", got, want)
   }
   err = pf.Close()
@@ -75,18 +75,12 @@ func TestCryptword(t *testing.T) {
   if cw != "" {
     t.Errorf("cryptword for unknown user should be blank")
   }
-  err := h.setCryptword("user1", "abcdef")
-  if err != nil {
-    t.Errorf("error setting cryptword: %v", err)
-  }
+  h.setCryptword("user1", "abcdef")
   cw = h.getCryptword("user1")
   if cw != "abcdef" {
     t.Errorf("cryptword should be equal to what was previously set")
   }
-  err = h.setCryptword("user1", "ghi")
-  if err != nil {
-    t.Errorf("error changing cryptword: %v", err)
-  }
+  h.setCryptword("user1", "ghi")
   cw = h.getCryptword("user1")
   if cw != "ghi" {
     t.Errorf("cryptword should be equal to new value")

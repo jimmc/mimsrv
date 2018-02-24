@@ -52,7 +52,8 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
     seconds = 0
   }
 
-  if h.nonceIsValidNow(userid, nonce, seconds) {
+  user := h.users.User(userid)
+  if user != nil && h.nonceIsValidNow(userid, nonce, seconds) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)
     token := newToken(userid, idstr)
