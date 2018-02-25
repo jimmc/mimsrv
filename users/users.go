@@ -6,11 +6,14 @@ import (
   "fmt"
   "log"
   "os"
+
+  "github.com/jimmc/mimsrv/permissions"
 )
 
 type User struct {
   userid string
   cryptword string
+  perms *permissions.Permissions
 }
 
 type Users struct {
@@ -52,6 +55,9 @@ func users(records [][]string) map[string]*User {
       userid: userid,
       cryptword: record[1],
     }
+    if len(record) > 2 {
+      user.perms = permissions.FromString(record[2])
+    }
     users[userid] = user
   }
   return users
@@ -88,28 +94,34 @@ func (m *Users) UserCount() int {
   return len(m.records)
 }
 
-func (m *Users) addUser(userid, cryptword string) {
-  m.addUserOnly(userid, cryptword)
-  m.addRecord(userid, cryptword)
+func (m *Users) addUser(userid, cryptword string, perms *permissions.Permissions) {
+  m.addUserOnly(userid, cryptword, perms)
+  m.addRecord(userid, cryptword, perms.ToString())
 }
 
-func (m *Users) addUserOnly(userid, cryptword string) {
+func (m *Users) addUserOnly(userid, cryptword string, perms *permissions.Permissions) {
   user := &User{
     userid: userid,
     cryptword: cryptword,
+    perms: perms,
   }
   m.users[userid] = user
 }
 
-func (m *Users) addRecord(userid, cryptword string) {
+func (m *Users) addRecord(userid, cryptword string, perms string) {
   for r, record := range m.records {
     if record[0] == userid {
       // This user already exists, update the existing record
       m.records[r][1] = cryptword
+      if len(m.records[r]) < 3 {
+        m.records[r] = append(m.records[r], perms)
+      } else {
+        m.records[r][2] = perms
+      }
       return
     }
   }
-  record := []string{userid, cryptword}
+  record := []string{userid, cryptword, perms}
   m.records = append(m.records, record)
 }
 
@@ -130,9 +142,10 @@ func (m *Users) SetCryptword(userid, cryptword string) {
       return
     }
   }
-  record := []string{userid, cryptword}
+  // Didn't find the record, add a new one
+  record := []string{userid, cryptword, ""}
   m.records = append(m.records, record)
-  m.addUser(userid, cryptword)
+  m.addUser(userid, cryptword, permissions.FromString(""))
 }
 
 func (m *Users) Cryptword(userid string) string {
@@ -141,6 +154,17 @@ func (m *Users) Cryptword(userid string) string {
     return ""
   }
   return user.Cryptword()
+}
+
+func (m *Users) HasPermission(userid string, perm permissions.Permission) bool {
+  user := m.User(userid)
+  if user == nil {
+    return false
+  }
+  if user.perms == nil {
+    return false
+  }
+  return user.perms.HasPermission(perm)
 }
 
 func (u *User) Cryptword() string {

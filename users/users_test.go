@@ -5,6 +5,8 @@ import (
   "io/ioutil"
   "os"
   "testing"
+
+  "github.com/jimmc/mimsrv/permissions"
 )
 
 func TestEmpty(t *testing.T) {
@@ -12,7 +14,8 @@ func TestEmpty(t *testing.T) {
   if got, want := m.UserCount(), 0; got != want {
     t.Errorf("user count for initial Empty: got %d, want %d", got, want)
   }
-  m.addUser("user1", "crypt1")
+  emptyPerms := permissions.FromString("")
+  m.addUser("user1", "crypt1", emptyPerms)
   if got, want := m.UserCount(), 1; got != want {
     t.Errorf("user count after adding a user: got %d, want %d", got, want)
   }
@@ -33,8 +36,15 @@ func TestLoadSaveFile(t *testing.T) {
     t.Errorf("cryptword for user1: got %s, want %s", got, want)
   }
 
-  m.addUser("user3", "cw3")
+  perms := permissions.FromString("edit")
+  m.addUser("user3", "cw3", perms)
   m.SetCryptword("user2", "cw2")
+  if got, want := m.HasPermission("user3", permissions.CanEdit), true; got !=want {
+    t.Errorf("edit permission for user3: got %v, want %v", got, want)
+  }
+  if got, want := m.HasPermission("user2", permissions.CanEdit), false; got !=want {
+    t.Errorf("edit permission for user2: got %v, want %v", got, want)
+  }
 
   pwsavefile := "testdata/tmp-pw-save.txt"
   pwsavebakfile := "testdata/tmp-pw-save.txt~"
