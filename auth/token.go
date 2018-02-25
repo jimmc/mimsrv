@@ -4,6 +4,8 @@ import (
   "fmt"
   "math/rand"
   "time"
+
+  "github.com/jimmc/mimsrv/users"
 )
 
 const (
@@ -16,7 +18,7 @@ var (
 
 type Token struct {
   Key string
-  userid string
+  user *users.User
   idstr string
   expiry time.Time
 }
@@ -25,9 +27,9 @@ func initTokens() {
   tokens = make(map[string]*Token)
 }
 
-func newToken(userid, idstr string) *Token {
+func newToken(user *users.User, idstr string) *Token {
   token := &Token{
-    userid: userid,
+    user: user,
     idstr: idstr,
     expiry: timeNow().Add(tokenExpirationDuration),
   }
@@ -49,4 +51,12 @@ func isValidToken(tokenKey, idstr string) bool {
     return false
   }
   return true
+}
+
+func userFromToken(tokenKey string) *users.User {
+  token := tokens[tokenKey]
+  if token == nil {
+    return nil
+  }
+  return token.user
 }

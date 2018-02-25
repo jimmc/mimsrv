@@ -3,6 +3,8 @@ package auth
 import (
   "testing"
   "time"
+
+  "github.com/jimmc/mimsrv/users"
 )
 
 func TestIsValid(t *testing.T) {
@@ -10,7 +12,8 @@ func TestIsValid(t *testing.T) {
   if isValidToken("user1", "id1") {
     t.Fatal("token was deemed valid before any tokens added")
   }
-  token := newToken("user1", "id1")
+  user1 := users.NewUser("user1", "cw1", nil)
+  token := newToken(user1, "id1")
   if !isValidToken(token.Key, "id1") {
     t.Fatalf("Token %s should be valid", token.Key)
   }
