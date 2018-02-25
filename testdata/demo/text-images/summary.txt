@@ -1,0 +1,2 @@
+A few trivial image files to give a simple demo of the mimsrv+mimview UI.
+Click on the arrow to expand the folder.

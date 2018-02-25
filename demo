@@ -1,0 +1,17 @@
+#!/bin/sh -
+# Sample startup script for mimsrv.
+# MIMVIEW points to the build directory for the Polymer ui files.
+# CONTENT points to the directory hierarchy containing the photos.
+# PASSWD points to the file containing usernames and encrypted passwords.
+# PORT is the TCP port number on which to listen for client connections.
+
+HERE=$(dirname $0)
+echo HERE is $HERE
+
+MIMVIEW=$HOME/src/mimview/build/default
+CONTENT=$HERE/testdata/demo
+PASSWD=$HERE/testdata/password-demo.txt
+PORT=8021
+
+exec ./mimsrv --mimviewroot $MIMVIEW --contentroot $CONTENT \
+    --passwordfile $PASSWD --maxclockskewseconds 20 --port $PORT

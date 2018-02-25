@@ -56,6 +56,7 @@ func (h *Handler) init() {
   h.validExts = map[string]bool {
     ".gif": true,
     ".jpg": true,
+    ".png": true,
   }
 }
 
