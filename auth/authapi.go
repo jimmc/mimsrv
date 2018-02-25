@@ -56,15 +56,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   if user != nil && h.nonceIsValidNow(userid, nonce, seconds) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)
-    token := newToken(userid, idstr)
-    tokenCookie := &http.Cookie{
-      Name: tokenCookieName,
-      Path: "/",
-      Value: token.Key,
-      Expires: token.expiry,
-      HttpOnly: true,
-    }
-    http.SetCookie(w, tokenCookie)
+    http.SetCookie(w, tokenCookie(userid, idstr))
   } else {
     http.Error(w, "Invalid userid or nonce", http.StatusUnauthorized)
     return
@@ -72,6 +64,17 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 
   w.WriteHeader(http.StatusOK)
   w.Write([]byte(`{"status": "ok"}`))
+}
+
+func tokenCookie(userid, idstr string) *http.Cookie {
+  token := newToken(userid, idstr)
+  return &http.Cookie{
+    Name: tokenCookieName,
+    Path: "/",
+    Value: token.Key,
+    Expires: token.expiry,
+    HttpOnly: true,
+  }
 }
 
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
