@@ -9,6 +9,7 @@ import (
   "strconv"
   "time"
 
+  "github.com/jimmc/mimsrv/permissions"
   "github.com/jimmc/mimsrv/users"
 )
 
@@ -59,6 +60,14 @@ func CurrentUser(r *http.Request) *users.User {
     return nil
   }
   return v.(*users.User)
+}
+
+func CurrentUserHasPermission(r *http.Request, perm permissions.Permission) bool {
+  user := CurrentUser(r)
+  if user == nil {
+    return false
+  }
+  return user.HasPermission(perm)
 }
 
 func (h *Handler) apiPrefix(s string) string {

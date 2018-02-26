@@ -44,7 +44,7 @@ func TestPasswordFile(t *testing.T) {
   if err != nil {
     t.Fatalf("Failed to read temp password file: %v", err)
   }
-  pwwant, err := ioutil.ReadFile("testdata/password-demo.txt")
+  pwwant, err := ioutil.ReadFile("testdata/pw1-golden.txt")
   if err != nil {
     t.Fatalf("Failed to read reference password file: %v", err)
   }

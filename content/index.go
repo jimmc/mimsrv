@@ -3,6 +3,7 @@ package content
 import (
   "fmt"
   "io/ioutil"
+  "net/http"
   "os"
   "path/filepath"
   "strings"
@@ -18,38 +19,184 @@ type ImageIndex struct {
   entries map[string]*imageEntry
 }
 
+const (
+  indexExtension = ".mpr"
+)
+
+func (h *Handler) UpdateImageIndex(apiPath string, item, action, value string) (error, int) {
+  contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
+  indexPath := fmt.Sprintf("%s/%s", contentRoot, apiPath)
+  return updateImageIndexItem(indexPath, item, action, value)
+}
+
+func updateImageIndexItem(indexPath string, item, action, value string) (error, int) {
+  if filepath.Ext(indexPath) != indexExtension {
+    return fmt.Errorf("Index operations can only apply to .%s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
+  }
+  if filepath.Base(indexPath) != "index.mpr" {
+    return fmt.Errorf("Index operations can only apply to index.mpr files"), http.StatusBadRequest
+  }
+  if action == "" {
+    return fmt.Errorf("No action specified"), http.StatusBadRequest
+  }
+  if action != "deltarotation" {
+    return fmt.Errorf("Action %s is not valid", action), http.StatusBadRequest
+  }
+  if item == "" {
+    return fmt.Errorf("No item specified"), http.StatusBadRequest
+  }
+  if value == "" {
+    return fmt.Errorf("No value specified"), http.StatusBadRequest
+  }
+
+  lines, err := readFileLines(indexPath)
+  if err != nil {
+    return err, http.StatusInternalServerError
+  }
+
+  itemIndex, entry := findEntry(lines, item)
+  if itemIndex < 0 {
+    return fmt.Errorf("Item %s not found in index", item), http.StatusBadRequest
+  }
+  if action == "deltarotation" {
+    entry.rotation, err = combineRotations(entry.rotation, value)
+    if err != nil {
+      return err, http.StatusBadRequest
+    }
+    lines[itemIndex] = entry.toString()
+    err = backupAndWriteFileLines(indexPath, lines)
+    if err != nil {
+      return err, http.StatusInternalServerError
+    }
+    return nil, http.StatusOK
+  }
+  // Add other actions here when defined.
+
+  return nil, http.StatusNotImplemented
+}
+
+func combineRotations(fileRotation, deltaRotation string) (string, error) {
+  if fileRotation != "" && fileRotation != "+r" && fileRotation != "++r" && fileRotation != "-r" {
+    return "", fmt.Errorf("Rotation %s in file is not valid", fileRotation)
+  }
+  if deltaRotation != "" && deltaRotation != "+r" && deltaRotation != "++r" && deltaRotation != "-r" {
+    return "", fmt.Errorf("Rotation %s in file is not valid", deltaRotation)
+  }
+  switch fileRotation + deltaRotation {
+    case "": return "", nil
+    case "+r": return "+r", nil
+    case "+rr": return "+rr", nil
+    case "-r": return "-r", nil
+    case "+r+r": return "+rr", nil
+    case "+r+rr": return "-r", nil
+    case "+r-r": return "", nil
+    case "+rr+r": return "-r", nil
+    case "+rr+rr": return "", nil
+    case "+rr-r": return "+r", nil
+    case "-r+r": return "", nil
+    case "-r+rr": return "+r", nil
+    case "-r-r": return "+rr", nil
+    default: return "", nil     // can't happen
+  }
+}
+
+func findEntry(lines []string, item string) (int, *imageEntry) {
+  // Look for the matching line
+  for i, line := range lines {
+    if line != "" {
+      entry := entryFromLine(line)
+      if entry.filename == item {
+        return i, entry
+      }
+    }
+  }
+  return -1, nil
+}
+
 /* Reads the image index in the specified directory, or nil
  * if no index file.
  */
 func (h *Handler) imageIndex(dir string) *ImageIndex {
   indexName := "index.mpr"
   indexPath := fmt.Sprintf("%s/%s", dir, indexName)
-  b, err := ioutil.ReadFile(indexPath)
+  indexLines, err := readFileLines(indexPath)
   if err != nil {
-    return nil;
+    return nil
   }
-
-  indexText := string(b)
-  indexLines := strings.Split(indexText, "\n")
 
   entries := make(map[string]*imageEntry)
   for i := range indexLines {
     if indexLines[i] != "" {
-      fields := strings.Split(indexLines[i], ";")
-      filename := fields[0]
-      entry := &imageEntry{
-        filename: filename,
-      }
-      if len(fields) > 1 {
-        entry.rotation = fields[1]
-      }
-      entries[filename] = entry
+      entry := entryFromLine(indexLines[i])
+      entries[entry.filename] = entry
     }
   }
   return &ImageIndex{
     indexName: indexName,
     entries: entries,
   }
+}
+
+func readFileLines(filename string) ([]string, error) {
+  b, err := ioutil.ReadFile(filename)
+  if err != nil {
+    return nil, err
+  }
+  text := string(b)
+  lines := strings.Split(text, "\n")
+  return lines, nil
+}
+
+func entryFromLine(line string) *imageEntry {
+  fields := strings.Split(line, ";")
+  entry := &imageEntry{
+    filename: fields[0],
+  }
+  if len(fields) > 1 {
+    entry.rotation = fields[1]
+  }
+  return entry
+}
+
+func backupAndWriteFileLines(filename string, lines []string) error {
+  newFilename := filename + ".new"
+  err := writeFileLines(newFilename, lines)
+  if err != nil {
+    return fmt.Errorf("error writing new index file: %v", err)
+  }
+  backupFilename := filename + "~"
+  err = os.Rename(filename, backupFilename)
+  if err != nil {
+    return fmt.Errorf("error renaming old index file to backup: %v", err)
+  }
+  err = os.Rename(newFilename, filename)
+  if err != nil {
+    return fmt.Errorf("error renaming new index file: %v", err)
+  }
+  return nil
+}
+
+func writeFileLines(filename string, lines []string) error {
+  f, err := os.Create(filename)
+  if err != nil {
+    return err
+  }
+
+  for _, line := range lines {
+    if line != "" {
+      fmt.Fprintf(f, "%s\n", line)
+    }
+  }
+  return f.Close()
+}
+
+
+func (e *imageEntry) toString() string {
+  s := e.filename
+  if e.rotation != "" {
+    s = s + ";" + e.rotation
+  }
+  return s
 }
 
 func (i *ImageIndex) filter(files []os.FileInfo) []os.FileInfo {

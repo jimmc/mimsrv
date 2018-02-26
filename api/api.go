@@ -8,7 +8,9 @@ import (
   "strconv"
   "strings"
 
+  "github.com/jimmc/mimsrv/auth"
   "github.com/jimmc/mimsrv/content"
+  "github.com/jimmc/mimsrv/permissions"
 )
 
 type Config struct {
@@ -26,6 +28,7 @@ func NewHandler(c *Config) http.Handler {
   mux := http.NewServeMux()
   mux.HandleFunc(h.apiPrefix("list"), h.list)
   mux.HandleFunc(h.apiPrefix("image"), h.image)
+  mux.HandleFunc(h.apiPrefix("index"), h.index)
   mux.HandleFunc(h.apiPrefix("text"), h.text)
   return mux
 }
@@ -86,6 +89,30 @@ func (h *handler) image(w http.ResponseWriter, r *http.Request) {
     Quality: 90,
   }
   jpeg.Encode(w, im, options)
+}
+
+func (h *handler) index(w http.ResponseWriter, r *http.Request) {
+  if !auth.CurrentUserHasPermission(r, permissions.CanEdit) {
+    http.Error(w, "Not authorized to edit", http.StatusUnauthorized)
+    return
+  }
+  if r.Method != http.MethodPost {
+    http.Error(w, "POST method is required", http.StatusMethodNotAllowed)
+    return
+  }
+  apiPath := strings.TrimPrefix(r.URL.Path, h.apiPrefix("index"))
+
+  item := r.FormValue("item")   // name of the index item on which to operate
+  action := r.FormValue("action") // action to take on an index item
+  value := r.FormValue("value")  // value that goes with the action
+
+  err, status := h.config.ContentHandler.UpdateImageIndex(apiPath, item, action, value)
+  if err != nil {
+    http.Error(w, err.Error(), status)
+    return
+  }
+  w.WriteHeader(http.StatusOK)
+  w.Write([]byte(`{"status": "ok"}`))
 }
 
 func (h *handler) text(w http.ResponseWriter, r *http.Request) {

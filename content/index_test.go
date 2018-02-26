@@ -1,8 +1,100 @@
 package content
 
 import (
+  "bytes"
+  "fmt"
+  "io"
+  "io/ioutil"
+  "net/http"
+  "os"
   "testing"
 )
+
+func TestUpdateImageIndex(t *testing.T) {
+  srcFilename := "testdata/index1.mpr"
+  testTmpDir := "testdata/tmp"
+  testIndexFilename := testTmpDir + "/index.mpr"
+  bakFilename := testIndexFilename + "~"
+  goldenFilename := "testdata/index1-golden.mpr"
+  os.RemoveAll(testTmpDir)
+  os.Remove(testIndexFilename)
+  err := os.Mkdir(testTmpDir, 0744)
+  if err != nil {
+    t.Fatalf(err.Error())
+  }
+  defer os.RemoveAll(testTmpDir)
+
+  err, _ = updateImageIndexItem("foo.txt", "i", "a", "v")
+  if err == nil {
+    t.Errorf("updating foo.txt as index file should fail")
+  }
+  err, _ = updateImageIndexItem("foo.mpr", "i", "a", "v")
+  if err == nil {
+    t.Errorf("updating index file other than index.mpr should fail")
+  }
+  err, _ = updateImageIndexItem(testIndexFilename, "i", "a", "v")
+  if err == nil {
+    t.Errorf("updating index file other than index.mpr should fail")
+  }
+  err, _ = updateImageIndexItem(testIndexFilename, "", "deltarotation", "v")
+  if err == nil {
+    t.Errorf("blank item should fail")
+  }
+  err, _ = updateImageIndexItem(testIndexFilename, "i", "", "v")
+  if err == nil {
+    t.Errorf("blank action should fail")
+  }
+  err, _ = updateImageIndexItem(testIndexFilename, "i", "deltarotation", "")
+  if err == nil {
+    t.Errorf("blank value should fail")
+  }
+  err, _ = updateImageIndexItem(testIndexFilename, "i", "deltarotation", "+r")
+  if err == nil {
+    t.Errorf("updating non-existant index should fail")
+  }
+
+  err = copyFile(srcFilename, testIndexFilename)
+  if err != nil {
+    t.Fatal(err.Error())
+  }
+  err, _ = updateImageIndexItem(testIndexFilename, "nosuchimage.jpg", "deltarotation", "+r")
+  if err == nil {
+    t.Errorf("rotate non-existing image should fail")
+  }
+  err, status := updateImageIndexItem(testIndexFilename, "img001.jpg", "deltarotation", "+r")
+  if err != nil {
+    t.Fatalf("rotate existing image failed: %v", err)
+  }
+  if got, want := status, http.StatusOK; got != want {
+    t.Errorf("update index status: got %d, want %d", got, want)
+  }
+
+  // Make sure we renamed the old file as a backup
+  err = compareFiles(bakFilename, srcFilename)
+  if err != nil {
+    t.Error(err.Error())
+  }
+  // Make sure the file we created is correct
+  err = compareFiles(testIndexFilename, goldenFilename)
+  if err != nil {
+    t.Error(err.Error())
+  }
+}
+
+func compareFiles(newFilename, refFilename string) error {
+  got, err := ioutil.ReadFile(newFilename)
+  if err != nil {
+    return fmt.Errorf("failed to read test file %s: %v", newFilename, err)
+  }
+  want, err := ioutil.ReadFile(refFilename)
+  if err != nil {
+    return fmt.Errorf("failed to read reference file %s: %v", refFilename, err)
+  }
+  if !bytes.Equal(got, want) {
+    return fmt.Errorf("file %s contents: got <<%s>>, want <<%s>>", newFilename, got, want)
+  }
+  return nil
+}
 
 func TestLoad(t *testing.T) {
   h := NewHandler(&Config{
@@ -58,4 +150,19 @@ func TestRotationFromIndex(t *testing.T) {
   if got, want := h.rotationFromIndex("testdata/with-index/image5.jpg"), 180; got != want {
     t.Errorf("rotation from index for image5: got %d, want %d")
   }
+}
+
+func copyFile(from, to string) error {
+  src, err := os.Open(from)
+  if err != nil {
+    return err
+  }
+  defer src.Close()
+  dst, err := os.Create(to)
+  if err != nil {
+    return err
+  }
+  defer dst.Close()
+  _, err = io.Copy(dst, src)
+  return err
 }
