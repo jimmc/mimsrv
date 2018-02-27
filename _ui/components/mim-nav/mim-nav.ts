@@ -32,6 +32,7 @@ interface NavItem {
   textError: string;
   index: string;
   filtered: boolean;
+  version: number;
 }
 
 @Polymer.decorators.customElement('mim-nav')
@@ -93,6 +94,7 @@ class MimNav extends Polymer.Element {
       modTimeStr: listItem.ModTimeStr,
       text: listItem.Text,
       textError: listItem.TextError,
+      version: 0,
     } as NavItem;
   }
 
@@ -333,6 +335,38 @@ class MimNav extends Polymer.Element {
     return index;
   }
 
+  async rotateCurrent(value: string) {
+    if (this.selectedIndex < 0) {
+      console.log("No image selected")
+      return
+    }
+    const row = this.rows[this.selectedIndex];
+    if (row.isDir) {
+      console.log("Can't rotate a directory")
+      return
+    }
+    const lastSlash = row.path.lastIndexOf('/')
+    const dir = row.path.substr(0, lastSlash)
+    const indexFile = dir + "/index.mpr"
+    try {
+      const indexUrl = "/api/index" + indexFile;
+      const formData = new FormData();
+      formData.append("item", row.name);
+      formData.append("action", "deltarotation");
+      formData.append("value", value)
+      formData.append("autocreate", "true");
+      const options = {
+        method: "POST",
+        params: formData,
+      };
+      const response = await ApiManager.xhrJson(indexUrl, options);
+      row.version = row.version + 1;
+      this.imgsizeChanged();    // reload the image at the new version
+    } catch (e) {
+      console.error("rotation failed:", e)
+    }
+  }
+
   @Polymer.decorators.observe('imgsize')
   imgsizeChanged() {
     if (this.selectedIndex >= 0) {
@@ -350,6 +384,9 @@ class MimNav extends Polymer.Element {
       const height = this.imgsize.height;
       const width = this.imgsize.width;
       qParms = '?w=' + width + '&h=' + height;
+      if (row && row.version) {
+        qParms = qParms + '&_=' + row.version;
+      }
     }
     if (row && row.path) {
       this.imgsrc = "/api/image" + row.path + qParms;

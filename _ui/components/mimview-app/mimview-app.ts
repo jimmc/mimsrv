@@ -85,6 +85,10 @@ class MimviewApp extends Polymer.Element {
     this.$.nav.selectPrevious();
   }
 
+  rotate(value: string) {
+    this.$.nav.rotateCurrent(value);
+  }
+
   showKeyBindings() {
     var keys = [];
     for (var key in this.keyMap) {
@@ -112,6 +116,10 @@ class MimviewApp extends Polymer.Element {
         this.showKeyBindings.bind(this));
     this.addKey('x', 'Logout',
         this.logout.bind(this));
+    this.addKey('r', 'Rotate 90 degrees counterclockwise',
+        () => this.rotate("+r"))
+    this.addKey('R', 'Rotate 90 degrees clockwise',
+        () => this.rotate("-r"))
   }
 
   addKey(key: string, desc: string, f: () => void) {
