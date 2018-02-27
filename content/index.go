@@ -9,9 +9,10 @@ import (
   "strings"
 )
 
-type imageEntry struct {
-  filename string
-  rotation string
+type UpdateCommand struct {
+  Item string
+  Action string
+  Value string
 }
 
 type ImageIndex struct {
@@ -19,33 +20,38 @@ type ImageIndex struct {
   entries map[string]*imageEntry
 }
 
+type imageEntry struct {
+  filename string
+  rotation string
+}
+
 const (
   indexExtension = ".mpr"
 )
 
-func (h *Handler) UpdateImageIndex(apiPath string, item, action, value string) (error, int) {
+func (h *Handler) UpdateImageIndex(apiPath string, command UpdateCommand) (error, int) {
   contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
   indexPath := fmt.Sprintf("%s/%s", contentRoot, apiPath)
-  return updateImageIndexItem(indexPath, item, action, value)
+  return updateImageIndexItem(indexPath, command)
 }
 
-func updateImageIndexItem(indexPath string, item, action, value string) (error, int) {
+func updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) {
   if filepath.Ext(indexPath) != indexExtension {
     return fmt.Errorf("Index operations can only apply to .%s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
   }
   if filepath.Base(indexPath) != "index.mpr" {
     return fmt.Errorf("Index operations can only apply to index.mpr files"), http.StatusBadRequest
   }
-  if action == "" {
+  if command.Action == "" {
     return fmt.Errorf("No action specified"), http.StatusBadRequest
   }
-  if action != "deltarotation" {
-    return fmt.Errorf("Action %s is not valid", action), http.StatusBadRequest
+  if command.Action != "deltarotation" {
+    return fmt.Errorf("Action %s is not valid", command.Action), http.StatusBadRequest
   }
-  if item == "" {
+  if command.Item == "" {
     return fmt.Errorf("No item specified"), http.StatusBadRequest
   }
-  if value == "" {
+  if command.Value == "" {
     return fmt.Errorf("No value specified"), http.StatusBadRequest
   }
 
@@ -54,12 +60,12 @@ func updateImageIndexItem(indexPath string, item, action, value string) (error, 
     return err, http.StatusInternalServerError
   }
 
-  itemIndex, entry := findEntry(lines, item)
+  itemIndex, entry := findEntry(lines, command.Item)
   if itemIndex < 0 {
-    return fmt.Errorf("Item %s not found in index", item), http.StatusBadRequest
+    return fmt.Errorf("Item %s not found in index", command.Item), http.StatusBadRequest
   }
-  if action == "deltarotation" {
-    entry.rotation, err = combineRotations(entry.rotation, value)
+  if command.Action == "deltarotation" {
+    entry.rotation, err = combineRotations(entry.rotation, command.Value)
     if err != nil {
       return err, http.StatusBadRequest
     }

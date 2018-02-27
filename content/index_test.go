@@ -24,31 +24,50 @@ func TestUpdateImageIndex(t *testing.T) {
   }
   defer os.RemoveAll(testTmpDir)
 
-  err, _ = updateImageIndexItem("foo.txt", "i", "a", "v")
+  command := UpdateCommand{
+    Item: "i",
+    Action: "a",
+    Value: "v",
+  }
+
+  err, _ = updateImageIndexItem("foo.txt", command)
   if err == nil {
     t.Errorf("updating foo.txt as index file should fail")
   }
-  err, _ = updateImageIndexItem("foo.mpr", "i", "a", "v")
+  err, _ = updateImageIndexItem("foo.mpr", command)
   if err == nil {
     t.Errorf("updating index file other than index.mpr should fail")
   }
-  err, _ = updateImageIndexItem(testIndexFilename, "i", "a", "v")
+  err, _ = updateImageIndexItem(testIndexFilename, command)
   if err == nil {
     t.Errorf("updating index file other than index.mpr should fail")
   }
-  err, _ = updateImageIndexItem(testIndexFilename, "", "deltarotation", "v")
+  err, _ = updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Action: "deltarotation",
+    Value: "v",
+  })
   if err == nil {
     t.Errorf("blank item should fail")
   }
-  err, _ = updateImageIndexItem(testIndexFilename, "i", "", "v")
+  err, _ = updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "i",
+    Value: "v",
+  })
   if err == nil {
     t.Errorf("blank action should fail")
   }
-  err, _ = updateImageIndexItem(testIndexFilename, "i", "deltarotation", "")
+  err, _ = updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "i",
+    Action: "deltarotation",
+  })
   if err == nil {
     t.Errorf("blank value should fail")
   }
-  err, _ = updateImageIndexItem(testIndexFilename, "i", "deltarotation", "+r")
+  err, _ = updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "i",
+    Action: "deltarotation",
+    Value: "+r",
+  })
   if err == nil {
     t.Errorf("updating non-existant index should fail")
   }
@@ -57,11 +76,19 @@ func TestUpdateImageIndex(t *testing.T) {
   if err != nil {
     t.Fatal(err.Error())
   }
-  err, _ = updateImageIndexItem(testIndexFilename, "nosuchimage.jpg", "deltarotation", "+r")
+  err, _ = updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "nosuchimage.jpg",
+    Action: "deltarotation",
+    Value: "+r",
+  })
   if err == nil {
     t.Errorf("rotate non-existing image should fail")
   }
-  err, status := updateImageIndexItem(testIndexFilename, "img001.jpg", "deltarotation", "+r")
+  err, status := updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "img001.jpg",
+    Action: "deltarotation",
+    Value: "+r",
+  })
   if err != nil {
     t.Fatalf("rotate existing image failed: %v", err)
   }
