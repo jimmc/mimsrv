@@ -120,10 +120,10 @@ func (h *Handler) autoCreateIndexFile(indexPath string) (error, int) {
 }
 
 func combineRotations(fileRotation, deltaRotation string) (string, error) {
-  if fileRotation != "" && fileRotation != "+r" && fileRotation != "++r" && fileRotation != "-r" {
+  if fileRotation != "" && fileRotation != "+r" && fileRotation != "+rr" && fileRotation != "-r" {
     return "", fmt.Errorf("Rotation %s in file is not valid", fileRotation)
   }
-  if deltaRotation != "" && deltaRotation != "+r" && deltaRotation != "++r" && deltaRotation != "-r" {
+  if deltaRotation != "" && deltaRotation != "+r" && deltaRotation != "+rr" && deltaRotation != "-r" {
     return "", fmt.Errorf("Rotation %s in file is not valid", deltaRotation)
   }
   switch fileRotation + deltaRotation {
