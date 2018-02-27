@@ -105,11 +105,17 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
   item := r.FormValue("item")   // name of the index item on which to operate
   action := r.FormValue("action") // action to take on an index item
   value := r.FormValue("value")  // value that goes with the action
+  autocreateStr := r.FormValue("autocreate")
+  autocreate := false
+  if strings.ToLower(autocreateStr) == "true" {
+    autocreate = true;
+  }
 
   command := content.UpdateCommand{
     Item: item,
     Action: action,
     Value: value,
+    Autocreate: autocreate,
   }
   err, status := h.config.ContentHandler.UpdateImageIndex(apiPath, command)
   if err != nil {

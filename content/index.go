@@ -3,6 +3,7 @@ package content
 import (
   "fmt"
   "io/ioutil"
+  "log"
   "net/http"
   "os"
   "path/filepath"
@@ -13,6 +14,7 @@ type UpdateCommand struct {
   Item string
   Action string
   Value string
+  Autocreate bool
 }
 
 type ImageIndex struct {
@@ -32,10 +34,10 @@ const (
 func (h *Handler) UpdateImageIndex(apiPath string, command UpdateCommand) (error, int) {
   contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
   indexPath := fmt.Sprintf("%s/%s", contentRoot, apiPath)
-  return updateImageIndexItem(indexPath, command)
+  return h.updateImageIndexItem(indexPath, command)
 }
 
-func updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) {
+func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) {
   if filepath.Ext(indexPath) != indexExtension {
     return fmt.Errorf("Index operations can only apply to .%s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
   }
@@ -56,6 +58,19 @@ func updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) 
   }
 
   lines, err := readFileLines(indexPath)
+  if os.IsNotExist(err) && command.Autocreate {
+    log.Printf("Index file %s does not exist, autocreating it now", indexPath)
+    var status int      // We want to reuse err
+    err, status = h.autoCreateIndexFile(indexPath)
+    if err != nil {
+      return err, status
+    }
+    lines, err = readFileLines(indexPath)
+    if err != nil {
+      e := fmt.Errorf("failed to read index file %s: %v", indexPath, err)
+      return e, http.StatusInternalServerError
+    }
+  }
   if err != nil {
     return err, http.StatusInternalServerError
   }
@@ -79,6 +94,29 @@ func updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) 
   // Add other actions here when defined.
 
   return nil, http.StatusNotImplemented
+}
+
+// Create an index file at the specified location by looking for all the image files
+// in the same directory and listing them into the index file.
+func (h *Handler) autoCreateIndexFile(indexPath string) (error, int) {
+  dir := filepath.Dir(indexPath)
+  files, err, status := h.readDirFiltered(dir)
+  if err != nil {
+    e := fmt.Errorf("failed to read directory %s: %v", dir, err)
+    return e, status
+  }
+
+  f, err := os.Create(indexPath)
+  if err != nil {
+    e := fmt.Errorf("failed to create new index file %s: %v", indexPath, err)
+    return e, http.StatusInternalServerError
+  }
+
+  for _, file := range files {
+    fmt.Fprintf(f, "%s\n", file.Name())
+  }
+  f.Close()
+  return nil, 0
 }
 
 func combineRotations(fileRotation, deltaRotation string) (string, error) {

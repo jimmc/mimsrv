@@ -64,22 +64,17 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
   dirApiPath = strings.TrimSuffix(dirApiPath, "/")
   dirPath := fmt.Sprintf("%s/%s", contentRoot, dirApiPath)
-  f, err := os.Open(dirPath)
+
+  files, err, status := h.readDirFiltered(dirPath)
   if err != nil {
-    return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
+    return nil, err, status
   }
-  defer f.Close()
-  files, err := f.Readdir(0)       // Read all file names
-  if err != nil {
-    return nil, fmt.Errorf("failed to read dir: %v", err), http.StatusBadRequest
-  }
-  files = h.filterOnExtension(files)
+
   imageIndex := h.imageIndex(dirPath)
   unfilteredFileCount := len(files)
   if imageIndex != nil {
     files = imageIndex.filter(files)
   }
-  sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 
   var loc *time.Location
   tzpath := fmt.Sprintf("%s/TZ", dirPath)
@@ -102,6 +97,21 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
     result.IndexName = imageIndex.indexName
   }
   return result, nil, 0
+}
+
+func (h *Handler) readDirFiltered(dirPath string) ([]os.FileInfo, error, int) {
+  f, err := os.Open(dirPath)
+  if err != nil {
+    return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
+  }
+  defer f.Close()
+  files, err := f.Readdir(0)       // Read all file names
+  if err != nil {
+    return nil, fmt.Errorf("failed to read dir: %v", err), http.StatusBadRequest
+  }
+  files = h.filterOnExtension(files)
+  sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
+  return files, nil, 0
 }
 
 func (h *Handler) filterOnExtension(files []os.FileInfo) []os.FileInfo {
