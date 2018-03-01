@@ -39,7 +39,7 @@ func (h *Handler) UpdateImageIndex(apiPath string, command UpdateCommand) (error
 
 func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) {
   if filepath.Ext(indexPath) != indexExtension {
-    return fmt.Errorf("Index operations can only apply to .%s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
+    return fmt.Errorf("Index operations can only apply to %s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
   }
   if filepath.Base(indexPath) != "index.mpr" {
     return fmt.Errorf("Index operations can only apply to index.mpr files"), http.StatusBadRequest

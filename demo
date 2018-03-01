@@ -6,7 +6,6 @@
 # PORT is the TCP port number on which to listen for client connections.
 
 HERE=$(dirname $0)
-echo HERE is $HERE
 
 MIMVIEW=$HOME/src/mimview/build/default
 CONTENT=$HERE/testdata/demo

@@ -128,14 +128,36 @@ func (h *handler) index(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) text(w http.ResponseWriter, r *http.Request) {
   path := strings.TrimPrefix(r.URL.Path, h.apiPrefix("text"))
-  b, err, status := h.config.ContentHandler.Text(path)
-  if err != nil {
-    http.Error(w, err.Error(), status)
-    return
+  switch r.Method {
+    case http.MethodGet:
+      b, err, status := h.config.ContentHandler.Text(path)
+      if err != nil {
+        http.Error(w, err.Error(), status)
+        return
+      }
+      w.WriteHeader(http.StatusOK)
+      w.Write(b)
+      return
+    case http.MethodPut:
+      if !auth.CurrentUserHasPermission(r, permissions.CanEdit) {
+        http.Error(w, "Not authorized to edit", http.StatusUnauthorized)
+        return
+      }
+      cmd := content.UpdateTextCommand{
+        Content: r.FormValue("content"),
+      }
+      err, status := h.config.ContentHandler.PutText(path, cmd)
+      if err != nil {
+        http.Error(w, err.Error(), status)
+        return
+      }
+      w.WriteHeader(http.StatusOK)
+      w.Write([]byte(`{"status": "ok"}`))
+      return
+    default:
+      http.Error(w, "Method must be GET or PUT", http.StatusMethodNotAllowed)
+      return
   }
-
-  w.WriteHeader(http.StatusOK)
-  w.Write(b)
 }
 
 func (h *handler) apiPrefix(s string) string {

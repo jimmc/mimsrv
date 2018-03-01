@@ -18,6 +18,7 @@ import (
 )
 
 const (
+  textExtension = ".txt"
   timeFormat = "3:04:05pm Mon Jan 2, 2006 MST"
 )
 
@@ -44,6 +45,10 @@ type ListResult struct {
   IndexName string
   UnfilteredFileCount int
   Items []ListItem
+}
+
+type UpdateTextCommand struct {
+  Content string
 }
 
 func NewHandler(c *Config) Handler {
@@ -225,9 +230,34 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
 
 func (h *Handler) Text(path string) ([]byte, error, int) {
   textFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  if filepath.Ext(textFilePath) != textExtension {
+    return nil, fmt.Errorf("Text operations can only apply to %s files, not to %s", textExtension, textFilePath), http.StatusBadRequest
+  }
   b, err := ioutil.ReadFile(textFilePath)
   if err != nil {
     return nil, fmt.Errorf("failed to read file: %v", err), http.StatusNotFound
   }
   return b, nil, 0
+}
+
+func (h *Handler) PutText(path string, command UpdateTextCommand) (error, int) {
+  textFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  if filepath.Ext(textFilePath) != textExtension {
+    return fmt.Errorf("Text operations can only apply to %s files, not to %s", textExtension, textFilePath), http.StatusBadRequest
+  }
+  content := command.Content
+  if content == "" {
+    // Delete the file rather than writing out an empty file.
+    err := os.Remove(textFilePath)
+    if err != nil && !os.IsNotExist(err) {
+      return err, http.StatusInternalServerError
+    }
+  } else {
+    b := []byte(command.Content)
+    err := ioutil.WriteFile(textFilePath, b, 0644)
+    if err != nil {
+      return err, http.StatusInternalServerError
+    }
+  }
+  return nil, http.StatusOK
 }
