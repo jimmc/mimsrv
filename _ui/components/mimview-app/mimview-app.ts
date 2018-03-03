@@ -27,27 +27,35 @@ class MimviewApp extends Polymer.Element {
     this.$.image.addEventListener('mimchecklogin', this.checkLogin.bind(this));
   }
 
-  showDialogHtml(html: string) {
+  async showDialogHtml(html: string) {
     this.dialogContent = html;
     this.$.dialogContent.innerHTML = html;
-    this.$.dialog.open();
+    const ok = await this.$.dialog.open();
+    console.log("dialog done, ok =", ok);
+    return ok;
   }
 
-  showDialog(text: string) {
+  async showDialog(text: string) {
     this.dialogContent = text;
-    this.$.dialog.open();
+    const ok = await this.$.dialog.open();
+    console.log("dialog done, ok =", ok);
+    return ok;
   }
 
   hideDialog() {
     this.dialogContent = "";
-    this.$.dialog.close();
+    this.$.dialog.cancel();
   }
 
-  onMimDialog(e: any) {
+  async onMimDialog(e: any) {
+    let ok: boolean;
     if (e.detail.html) {
-      this.showDialogHtml(e.detail.html);
+      ok = await this.showDialogHtml(e.detail.html);
     } else {
-      this.showDialog(e.detail.message);
+      ok = await this.showDialog(e.detail.message);
+    }
+    if (e.callback) {
+      e.callback(ok);
     }
   }
 

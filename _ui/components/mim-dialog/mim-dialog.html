@@ -9,11 +9,13 @@
       :host {
       }
     </style>
-    <paper-dialog id="dialog" restore-focus-on-close>
+    <paper-dialog id="dialog" restore-focus-on-close
+        on-iron-overlay-closed="cancel">
       <div>
         <slot name="content"></slot>
       </div>
-      <paper-button dialog-dismiss>Dismiss</paper-button>
+      <paper-button on-click="cancel">Dismiss</paper-button>
+      <paper-button on-click="confirm">OK</paper-button>
     </paper-dialog>
   </template>
 </dom-module>
