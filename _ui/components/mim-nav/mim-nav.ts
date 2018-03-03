@@ -335,6 +335,44 @@ class MimNav extends Polymer.Element {
     return index;
   }
 
+  currentImagePathAndText() {
+    if (this.selectedIndex < 0) {
+      return null;
+    }
+    const row = this.rows[this.selectedIndex];
+    if (row.isDir) {
+      return null;
+    }
+    const itemPath = row.path;
+    const lastDot = itemPath.lastIndexOf('.');
+    const textPath = itemPath.substr(0, lastDot) + ".txt";
+    return [itemPath, textPath, row.text];
+  }
+
+  currentFolderPathAndText() {
+    let index = this.selectedIndex;
+    if (index < 0) {
+      return null;
+    }
+    let row = this.rows[index];
+    // Walk backwards until we get to a folder
+    while (!row.isDir && index > 0) {
+      index = index - 1;
+      row = this.rows[index];
+    }
+    const textPath = row.path + "/summary.txt";
+    return [row.path, textPath, row.text];
+  }
+
+  updateText(itemPath: string, textPath: string, text: string) {
+    const index = this.rows.findIndex((row) => row.path == itemPath);
+    if (index < 0) {
+      console.error("Can't find entry for item", itemPath);
+      return;
+    }
+    this.set(["rows", index, "text"], text);
+  }
+
   async rotateCurrent(value: string) {
     if (this.selectedIndex < 0) {
       console.log("No image selected")

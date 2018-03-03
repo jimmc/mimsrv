@@ -5,6 +5,7 @@
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../components/mim-caption/mim-caption.html">
@@ -86,8 +87,16 @@
         flex: none;
       }
     </style>
-    <mim-dialog id="dialog" hidden$={{!dialogContent}}>
-      <div slot="content" id="dialogContent">[[dialogContent]]</div>
+    <mim-dialog id="dialog" cancel-label="[[dialogCancelLabel]]"
+        confirm-label="[[dialogConfirmLabel]]">
+      <div slot="content">
+        <span id="dialogHtml"></span>
+        <span id="dialogText">[[dialogContent]]</span>
+        <div hidden$=[[!dialogShowTextarea]]>
+          <paper-textarea id="dialogTextarea" cols="60" autofocus="true">
+          </paper-textarea>
+        </div>
+      </div>
     </mim-dialog>
     <div id="main" hidden$="[[!loggedIn]]">
       <div id="leftbar">

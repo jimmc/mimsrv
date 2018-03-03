@@ -3,6 +3,12 @@
 @Polymer.decorators.customElement('mim-dialog')
 class MimDialog extends Polymer.Element {
 
+  @Polymer.decorators.property({type: String})
+  cancelLabel: string = "Cancel";
+
+  @Polymer.decorators.property({type: String})
+  confirmLabel: string = "OK";
+
   dialogResolve: (status: boolean) => void;
   dialogReject: () => void;
 

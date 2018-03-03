@@ -8,14 +8,17 @@
     <style>
       :host {
       }
+      [hidden] {
+        display: none !important;
+      }
     </style>
     <paper-dialog id="dialog" restore-focus-on-close
         on-iron-overlay-closed="cancel">
       <div>
         <slot name="content"></slot>
       </div>
-      <paper-button on-click="cancel">Dismiss</paper-button>
-      <paper-button on-click="confirm">OK</paper-button>
+      <paper-button on-click="cancel" hidden$=[[!cancelLabel]]>[[cancelLabel]]</paper-button>
+      <paper-button on-click="confirm" hidden$=[[!confirmLabel]]>[[confirmLabel]]</paper-button>
     </paper-dialog>
   </template>
 </dom-module>
