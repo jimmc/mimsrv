@@ -8,9 +8,20 @@
 HERE=$(dirname $0)
 
 MIMVIEW=$HOME/src/mimview/build/default
-CONTENT=$HERE/testdata/demo
+CONTENT_SRC=$HERE/testdata/demo
+CONTENT_TMP=$HERE/testdata/demo-tmp
 PASSWD=$HERE/testdata/password-demo.txt
 PORT=8021
 
-exec ./mimsrv --mimviewroot $MIMVIEW --contentroot $CONTENT \
+cleanup() {
+  rm -rf $CONTENT_TMP
+}
+cleanup
+trap cleanup EXIT
+
+# We copy the content demo to a tmp dir and run it there. This allows
+# the user to edit the content without touching the original demo data.
+cp -rp $CONTENT_SRC $CONTENT_TMP
+
+./mimsrv --mimviewroot $MIMVIEW --contentroot $CONTENT_TMP \
     --passwordfile $PASSWD --maxclockskewseconds 20 --port $PORT
