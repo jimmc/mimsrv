@@ -181,6 +181,8 @@ class MimviewApp extends Polymer.Element {
         () => this.$.nav.rotateCurrent("-r"))
     this.addKey('x', 'Logout',
         this.logout.bind(this));
+    this.addKey('z', 'Zoom to unscaled image or back',
+        () => this.$.nav.zoomCurrent())
   }
 
   addKey(key: string, desc: string, f: () => void) {
@@ -210,5 +212,13 @@ class MimviewApp extends Polymer.Element {
   imgitemChanged() {
     this.hascaption = !!(this.imgitem);
     this.$.image.handleResize();
+  }
+
+  imgOverflowClass(): string {
+    if (this.imgitem && this.imgitem.zoom) {
+      return 'overflowscroll';
+    } else {
+      return 'overflowhidden';
+    }
   }
 }

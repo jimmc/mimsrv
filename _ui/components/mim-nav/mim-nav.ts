@@ -33,6 +33,7 @@ interface NavItem {
   index: string;
   filtered: boolean;
   version: number;
+  zoom: boolean;        // When true, request unscaled image
 }
 
 @Polymer.decorators.customElement('mim-nav')
@@ -405,6 +406,16 @@ class MimNav extends Polymer.Element {
     }
   }
 
+  zoomCurrent() {
+    if (this.selectedIndex < 0) {
+      return
+    }
+    const row = this.rows[this.selectedIndex];
+    row.zoom = !row.zoom;
+    row.version = row.version + 1;
+    this.selectAt(this.selectedIndex);  // redisplay
+  }
+
   @Polymer.decorators.observe('imgsize')
   imgsizeChanged() {
     if (this.selectedIndex >= 0) {
@@ -416,21 +427,27 @@ class MimNav extends Polymer.Element {
   }
 
   setImageRow(row?: NavItem) {
-    let qParms = '';
     this.imgitem = row;
-    if (this.imgsize) {
+    if (!row || !row.path) {
+      this.imgsrc = '';
+      return
+    }
+
+    let qParms = '';
+    if (this.imgsize && !row.zoom) {
       const height = this.imgsize.height;
       const width = this.imgsize.width;
       qParms = '?w=' + width + '&h=' + height;
-      if (row && row.version) {
-        qParms = qParms + '&_=' + row.version;
+    }
+    if (row && row.version) {
+      if (qParms) {
+        qParms = qParms + '&';
+      } else {
+        qParms = '?';
       }
+      qParms = qParms + '_=' + row.version;
     }
-    if (row && row.path) {
-      this.imgsrc = "/api/image" + row.path + qParms;
-    } else {
-      this.imgsrc = '';
-    }
+    this.imgsrc = "/api/image" + row.path + qParms;
   }
 
   showDialogHtml(html: string) {

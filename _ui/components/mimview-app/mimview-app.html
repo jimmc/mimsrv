@@ -80,7 +80,12 @@
       }
       #image {
         flex: auto;
+      }
+      .overflowhidden {
         overflow: hidden;
+      }
+      .overflowscroll {
+        overflow: scroll;
       }
       #caption {
         flex: none;
@@ -103,7 +108,8 @@
             imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
       </div>
       <div id="display">
-        <mim-image id="image" imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
+        <mim-image id="image" class="[[imgOverflowClass()]]"
+            imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
         <mim-caption id="caption" hidden$=[[!hascaption]] imgitem="[[imgitem]]"></mim-caption>
       </div>
     </div>
