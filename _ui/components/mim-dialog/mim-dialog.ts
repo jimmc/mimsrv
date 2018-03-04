@@ -61,6 +61,12 @@ class MimDialog extends Polymer.Element {
     }
   }
 
+  checkEnter(e: any) {
+    if (e.key == 'Enter' && e.shiftKey) {
+      this.confirm();
+    }
+  }
+
   textareaValue(): string {
     return this.$.dialogTextarea.value;
   }

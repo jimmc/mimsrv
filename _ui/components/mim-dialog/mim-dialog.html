@@ -18,7 +18,8 @@
         <span id="dialogHtml"></span>
         <span id="dialogText">[[text]]</span>
         <div hidden$=[[!showTextarea]]>
-          <paper-textarea id="dialogTextarea" cols="60" autofocus="true">
+          <paper-textarea id="dialogTextarea" cols="60" autofocus="true"
+              on-keydown="checkEnter">
           </paper-textarea>
         </div>
       </div>
