@@ -7,7 +7,7 @@
 
 HERE=$(dirname $0)
 
-MIMVIEW=$HOME/src/mimview/build/default
+MIMVIEW=$HERE/_ui/build/default
 CONTENT_SRC=$HERE/testdata/demo
 CONTENT_TMP=$HERE/testdata/demo-tmp
 PASSWD=$HERE/testdata/password-demo.txt
