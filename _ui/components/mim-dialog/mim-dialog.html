@@ -15,7 +15,12 @@
     <paper-dialog id="dialog" restore-focus-on-close
         on-iron-overlay-closed="cancel">
       <div>
-        <slot name="content"></slot>
+        <span id="dialogHtml"></span>
+        <span id="dialogText">[[text]]</span>
+        <div hidden$=[[!showTextarea]]>
+          <paper-textarea id="dialogTextarea" cols="60" autofocus="true">
+          </paper-textarea>
+        </div>
       </div>
       <paper-button on-click="cancel" hidden$=[[!cancelLabel]]>[[cancelLabel]]</paper-button>
       <paper-button on-click="confirm" hidden$=[[!confirmLabel]]>[[confirmLabel]]</paper-button>

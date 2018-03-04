@@ -86,17 +86,7 @@
         flex: none;
       }
     </style>
-    <mim-dialog id="dialog" cancel-label="[[dialogCancelLabel]]"
-        confirm-label="[[dialogConfirmLabel]]">
-      <div slot="content">
-        <span id="dialogHtml"></span>
-        <span id="dialogText">[[dialogContent]]</span>
-        <div hidden$=[[!dialogShowTextarea]]>
-          <paper-textarea id="dialogTextarea" cols="60" autofocus="true">
-          </paper-textarea>
-        </div>
-      </div>
-    </mim-dialog>
+    <mim-dialog id="dialog"></mim-dialog>
     <div id="main" hidden$="[[!loggedIn]]">
       <div id="leftbar">
         <div id="menu">

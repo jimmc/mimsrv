@@ -8,18 +8,6 @@ class KeyFunc {
 @Polymer.decorators.customElement('mimview-app')
 class MimviewApp extends Polymer.Element {
 
-  @Polymer.decorators.property({type: String})
-  dialogContent: string = "";
-
-  @Polymer.decorators.property({type: Boolean})
-  dialogShowTextarea: boolean = false;
-
-  @Polymer.decorators.property({type: String})
-  dialogCancelLabel: string = "Dismiss";
-
-  @Polymer.decorators.property({type: String})
-  dialogConfirmLabel: string = "OK";
-
   @Polymer.decorators.property({type: Object})
   imgitem: NavItem;
 
@@ -38,39 +26,44 @@ class MimviewApp extends Polymer.Element {
   }
 
   async showHtmlDialog(html: string) {
-    this.dialogShowTextarea = false;
-    this.dialogConfirmLabel = "";
-    this.dialogCancelLabel = "Dismiss";
-    this.dialogContent = "";
-    this.$.dialogHtml.innerHTML = html;
-    return this.showDialog();
+    const opts = {
+      showTextarea: false,
+      confirmLabel: '',
+      cancelLabel: 'Dismiss',
+      text: '',
+      html: html,
+    } as MimDialogOptions;
+    return this.showDialog(opts);
   }
 
   async showTextDialog(text: string) {
-    this.dialogShowTextarea = false;
-    this.dialogConfirmLabel = "";
-    this.dialogCancelLabel = "Dismiss";
-    this.dialogContent = text;
-    this.$.dialogHtml.innerHTML = "";
-    return this.showDialog();
+    const opts = {
+      showTextarea: false,
+      confirmLabel: '',
+      cancelLabel: 'Dismiss',
+      text: text,
+      html: '',
+    } as MimDialogOptions;
+    return this.showDialog(opts);
   }
 
   async showTextareaDialog(label: string, text: string) {
-    this.dialogShowTextarea = true;
-    this.dialogConfirmLabel = "OK";
-    this.dialogCancelLabel = "Cancel";
-    this.$.dialogTextarea.value = text;
-    this.dialogContent = label;
-    this.$.dialogHtml.innerHTML = "";
-    return this.showDialog();
+    const opts = {
+      showTextarea: true,
+      confirmLabel: 'OK',
+      cancelLabel: 'Cancel',
+      textarea: text,
+      text: label,
+      html: '',
+    } as MimDialogOptions;
+    return this.showDialog(opts);
   }
 
-  async showDialog() {
-    return this.$.dialog.open();
+  async showDialog(opts: MimDialogOptions) {
+    return this.$.dialog.open(opts);
   }
 
   hideDialog() {
-    this.dialogContent = "";
     this.$.dialog.cancel();
   }
 
@@ -141,13 +134,12 @@ class MimviewApp extends Polymer.Element {
     const currentText = pathAndText[2];
     console.log("textPath ", textPath);
 
-    this.showTextareaDialog("Description for " + itemPath, currentText);
-    const ok = await this.showDialog()
+    const ok = await this.showTextareaDialog("Description for " + itemPath, currentText);
     if (!ok) {
       console.log("editDescription canceled");
       return
     }
-    const text = this.$.dialogTextarea.value;
+    const text = this.$.dialog.textareaValue();
     console.log("editDescription gets ", text);
     if (await this.putText(textPath, text)) {
       this.$.nav.updateText(itemPath, textPath, text);
