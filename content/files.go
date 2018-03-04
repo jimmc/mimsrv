@@ -60,6 +60,7 @@ func NewHandler(c *Config) Handler {
 func (h *Handler) init() {
   h.validExts = map[string]bool {
     ".gif": true,
+    ".jpeg": true,
     ".jpg": true,
     ".png": true,
   }
