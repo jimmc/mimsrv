@@ -9,7 +9,8 @@ import (
 )
 
 const (
-  tokenExpirationDuration = time.Duration(1) * time.Hour
+  tokenTimeoutDuration = time.Duration(1) * time.Hour
+  tokenExpirationDuration = time.Duration(10) * time.Hour
 )
 
 var (
@@ -20,7 +21,8 @@ type Token struct {
   Key string
   user *users.User
   idstr string
-  expiry time.Time
+  timeout time.Time     // Time at which token is no longer valid if not refreshed
+  expiry time.Time      // Time past which token can not be auto-refreshed
 }
 
 func initTokens() {
@@ -31,6 +33,7 @@ func newToken(user *users.User, idstr string) *Token {
   token := &Token{
     user: user,
     idstr: idstr,
+    timeout: timeNow().Add(tokenTimeoutDuration),
     expiry: timeNow().Add(tokenExpirationDuration),
   }
   keynum := rand.Intn(1000000)
@@ -39,24 +42,34 @@ func newToken(user *users.User, idstr string) *Token {
   return token
 }
 
-func isValidToken(tokenKey, idstr string) bool {
+func currentToken(tokenKey, idstr string) (*Token, bool) {
   token := tokens[tokenKey]
   if token == nil {
+    return nil, false
+  }
+  return token, token.isValid(idstr)
+}
+
+func (t *Token) isValid(idstr string) bool {
+  if t.idstr != idstr {
     return false
   }
-  if token.idstr != idstr {
-    return false
-  }
-  if timeNow().After(token.expiry) {
+  if timeNow().After(t.timeout) {
     return false
   }
   return true
 }
 
-func userFromToken(tokenKey string) *users.User {
-  token := tokens[tokenKey]
-  if token == nil {
-    return nil
+// updateTimeout reset the token timeout to be the timeout-duration
+// from now, or the token expiry, whichever comes first.
+func (t *Token) updateTimeout() {
+  timeout := timeNow().Add(tokenTimeoutDuration)
+  if timeout.After(t.expiry) {
+    timeout = t.expiry
   }
-  return token.user
+  t.timeout = timeout
+}
+
+func (t *Token) User() *users.User {
+  return t.user
 }

@@ -19,6 +19,7 @@ const (
 
 type LoginStatus struct {
   LoggedIn bool
+  Permissions string
 }
 
 type authKey int
@@ -36,10 +37,12 @@ func (h *Handler) initApiHandler() {
 
 func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-    token := cookieValue(r, tokenCookieName)
+    tokenKey := cookieValue(r, tokenCookieName)
     idstr := clientIdString(r)
-    if isValidToken(token, idstr) {
-      user := userFromToken(token)
+    if token, valid := currentToken(tokenKey, idstr); valid {
+      token.updateTimeout()
+      http.SetCookie(w, token.cookie()) // Set the renewed cookie
+      user := token.User()
       mimRequest := requestWithContextUser(r, user)
       httpHandler.ServeHTTP(w, mimRequest)
     } else {
@@ -100,11 +103,15 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 
 func tokenCookie(user *users.User, idstr string) *http.Cookie {
   token := newToken(user, idstr)
+  return token.cookie()
+}
+
+func (t *Token) cookie() *http.Cookie {
   return &http.Cookie{
     Name: tokenCookieName,
     Path: "/",
-    Value: token.Key,
-    Expires: token.expiry,
+    Value: t.Key,
+    Expires: t.timeout,
     HttpOnly: true,
   }
 }
@@ -123,11 +130,16 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
-  token := cookieValue(r, tokenCookieName)
+  tokenKey := cookieValue(r, tokenCookieName)
   idstr := clientIdString(r)
-  loggedIn := isValidToken(token, idstr);
+  token, loggedIn := currentToken(tokenKey, idstr)
   result := &LoginStatus{
     LoggedIn: loggedIn,
+  }
+  if loggedIn {
+    token.updateTimeout()
+    http.SetCookie(w, token.cookie()) // Set the renewed cookie
+    result.Permissions = token.User().PermissionsString()
   }
 
   b, err := json.MarshalIndent(result, "", "  ")

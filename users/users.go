@@ -190,3 +190,10 @@ func (u *User) HasPermission(perm permissions.Permission) bool {
   }
   return u.perms.HasPermission(perm)
 }
+
+func (u *User) PermissionsString() string {
+  if u.perms == nil {
+    return ""
+  }
+  return u.perms.ToString()
+}
