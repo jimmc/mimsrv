@@ -14,6 +14,9 @@ class MimviewApp extends Polymer.Element {
   @Polymer.decorators.property({type: Boolean})
   hascaption: boolean;
 
+  @Polymer.decorators.property({type: Boolean})
+  loggedIn: boolean;
+
   keyMap: {[key: string]: KeyFunc};
 
   ready() {
@@ -116,11 +119,27 @@ class MimviewApp extends Polymer.Element {
     }
   }
 
+  rotateCurrent(r: string) {
+    if (!this.$.mimlogin.hasPermission('edit')) {
+      this.showTextDialog('You do not have permission to edit');
+      return
+    }
+    this.$.nav.rotateCurrent(r);
+  }
+
   async editImageDescription() {
+    if (!this.$.mimlogin.hasPermission('edit')) {
+      this.showTextDialog('You do not have permission to edit');
+      return
+    }
     this.editDescription(this.$.nav.currentImagePathAndText());
   }
 
   async editFolderDescription() {
+    if (!this.$.mimlogin.hasPermission('edit')) {
+      this.showTextDialog('You do not have permission to edit');
+      return
+    }
     this.editDescription(this.$.nav.currentFolderPathAndText());
   }
 
@@ -176,9 +195,9 @@ class MimviewApp extends Polymer.Element {
     this.addKey('E', 'Edit the folder description',
         () => this.editFolderDescription())
     this.addKey('r', 'Rotate 90 degrees counterclockwise',
-        () => this.$.nav.rotateCurrent("+r"))
+        () => this.rotateCurrent("+r"))
     this.addKey('R', 'Rotate 90 degrees clockwise',
-        () => this.$.nav.rotateCurrent("-r"))
+        () => this.rotateCurrent("-r"))
     this.addKey('x', 'Logout',
         this.logout.bind(this));
     this.addKey('z', 'Zoom to unscaled image or back',
@@ -212,6 +231,13 @@ class MimviewApp extends Polymer.Element {
   imgitemChanged() {
     this.hascaption = !!(this.imgitem);
     this.$.image.handleResize();
+  }
+
+  @Polymer.decorators.observe('loggedIn')
+  loggedInChanged() {
+    if (this.loggedIn) {
+      this.$.mimlogin.checkStatus();    // Load our logged-in permissions
+    }
   }
 
   imgOverflowClass(): string {

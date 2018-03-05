@@ -11,6 +11,8 @@ class MimLogin extends Polymer.Element {
   @Polymer.decorators.property({type: String})
   loginError: string;
 
+  permissions: string[] = [];
+
   ready() {
     super.ready();
     this.$.username.addEventListener('keydown', this.keydown.bind(this));
@@ -43,7 +45,7 @@ class MimLogin extends Polymer.Element {
       };
       const response = await ApiManager.xhrJson(loginUrl, options);
       this.loggedIn = true;
-      console.log("Login succeeded");
+      console.log("Login succeeded, response:", response);
       location.reload();
     } catch (e) {
       this.loggedIn = false;
@@ -56,6 +58,7 @@ class MimLogin extends Polymer.Element {
       const loginUrl = "/auth/logout/";
       const response = await ApiManager.xhrJson(loginUrl);
       this.loggedIn = false;
+      this.permissions = [];
       console.log("Logout succeeded");
       location.reload();
     } catch (e) {
@@ -75,9 +78,16 @@ class MimLogin extends Polymer.Element {
         console.error("not logged in");
         location.reload();    // TODO - use a dialog to relogin without reload
       }
+      if (this.loggedIn) {
+        this.permissions = response.Permissions.split(',');
+      }
     } catch (e) {
       console.error("auth status call failed");
     }
+  }
+
+  hasPermission(perm: string) {
+    return (this.permissions.indexOf(perm) >= 0);
   }
 
   keydown(e: any) {
