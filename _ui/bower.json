@@ -29,7 +29,8 @@
     "polymer-decorators": "Polymer/polymer-decorators#^0.1.2",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.0-rc.9",
     "cryptojslib-import": "appsup-polymer/cryptojslib-import",
-    "cryptojslib": "sytelus/CryptoJS#^3.1.2"
+    "cryptojslib": "sytelus/CryptoJS#^3.1.2",
+    "web-animations-js": "^2.3.1"
   },
   "devDependencies": {
     "web-component-tester": "~6.3.0"
