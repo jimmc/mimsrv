@@ -97,8 +97,17 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  result := &LoginStatus{
+    LoggedIn: true,
+    Permissions: user.PermissionsString(),
+  }
+  b, err := json.MarshalIndent(result, "", "  ")
+  if err != nil {
+    http.Error(w, fmt.Sprintf("Failed to marshall login status: %v", err), http.StatusInternalServerError)
+    return
+  }
   w.WriteHeader(http.StatusOK)
-  w.Write([]byte(`{"status": "ok"}`))
+  w.Write(b)
 }
 
 func tokenCookie(user *users.User, idstr string) *http.Cookie {
