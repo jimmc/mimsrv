@@ -8,6 +8,7 @@
 <link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../../bower_components/polymer-decorators/polymer-decorators.html">
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/vaadin-split-layout/vaadin-split-layout.html">
 <link rel="import" href="../../components/mim-caption/mim-caption.html">
 <link rel="import" href="../../components/mim-dialog/mim-dialog.html">
 <link rel="import" href="../../components/mim-image/mim-image.html">
@@ -93,7 +94,7 @@
       }
     </style>
     <mim-dialog id="dialog"></mim-dialog>
-    <div id="main" hidden$="[[!loggedIn]]">
+    <vaadin-split-layout id="main" hidden$="[[!loggedIn]]">
       <div id="leftbar">
         <div id="menu">
 	  <paper-menu-button id="menubutton">
@@ -113,7 +114,7 @@
             imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
         <mim-caption id="caption" hidden$=[[!hascaption]] imgitem="[[imgitem]]"></mim-caption>
       </div>
-    </div>
+    </vaadin-split-layout>
     <mim-login id="mimlogin" hidden$="[[loggedIn]]"></mim-login>
   </template>
 </dom-module>
