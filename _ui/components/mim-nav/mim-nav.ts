@@ -57,9 +57,52 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Number})
   selectedIndex: number;
 
+  publishChannel: BroadcastChannel;
+  subscribeChannel: BroadcastChannel;
+
   ready() {
     super.ready();
     this.queryApiList('');
+    this.setupChannels();
+  }
+
+  setupChannels() {
+    this.publishChannel = this.createNamedChannel('publish')
+    if (this.getQueryParm('subscribe') !== null) {
+      this.subscribeChannel = this.createNamedChannel('subscribe')
+      this.subscribeChannel.onmessage = (b) => this.receiveBroadcast(b)
+    }
+  }
+
+  createNamedChannel(parmName: string) {
+    const parmValue = this.getQueryParm(parmName);
+    const channelName = !!parmValue ? ('mimview-' + parmValue) : 'mimview';
+    return new BroadcastChannel(channelName);
+  }
+
+  getQueryParm(parmName: string) {
+    const query = location.search.substring(1);
+    const parms = query.split('&');
+    for (let i = 0; i < parms.length; i++) {
+      const kv = parms[i].split('=');
+      if (kv[0] === parmName) {
+        if (kv.length >= 2) {
+          return kv[1];
+        } else {
+          return '';
+        }
+      }
+    }
+    return null;
+  }
+
+  publishPath(path: string) {
+    this.publishChannel.postMessage(path);
+  }
+
+  receiveBroadcast(b: MessageEvent) {
+    const data: string = b.data;
+    this.selectPath(data);
   }
 
   // Returns the delta count for this.rows
@@ -217,6 +260,43 @@ class MimNav extends Polymer.Element {
     }
   }
 
+  async selectPath(path: string) {
+    if (this.selectedIndex >= 0) {
+      const row = this.rows[this.selectedIndex];
+      if (row.path === path) {
+        // Already selected, do nothing
+        return
+      }
+    }
+    if (!path) {
+      this.selectAt(-1);        // Deselect
+      return;
+    }
+    await this.openPath(path);
+  }
+
+  async openPath(path: string) {
+    const x = path.lastIndexOf('/');
+    if (x < 0) {
+      return;
+    }
+    const parentPath = path.substr(0, x);
+    await this.openPath(parentPath);
+    const index = this.rows.findIndex((row) => row.path == path);
+    if (index < 0) {
+      console.log("path not found:", path);
+      return;
+    }
+    const row = this.rows[index];
+    if (row.isDir) {
+      if (!row.expanded) {
+        await this.toggleAt(index);     // expand the folder
+      }
+    } else {
+      this.selectAt(index);     // Select the image
+    }
+  }
+
   scrollRowIntoView(index: number) {
     if (index < 0 || index >= this.rows.length) {
       return;
@@ -232,22 +312,27 @@ class MimNav extends Polymer.Element {
 
   async toggleCurrent() {
     if (this.selectedIndex >= 0) {
-      const row = this.rows[this.selectedIndex];
-      const rowIndex = this.selectedIndex;
-      if (row.isDir) {
-        const preRowCount = this.rows.length;
-        if (row.expanded) {
-          this.collapseRowAt(this.selectedIndex);
-        } else {
-          this.set(['rows', rowIndex, 'pending'], true);
-          await this.queryApiList(row.path);
-          this.set(['rows', rowIndex, 'pending'], false);
-        }
-        const postRowCount = this.rows.length;
-        return postRowCount - preRowCount;
-      }
+      return await this.toggleAt(this.selectedIndex);
     }
     return 0
+  }
+
+  async toggleAt(rowIndex: number) {
+    const row = this.rows[rowIndex];
+    if (row.isDir) {
+      const preRowCount = this.rows.length;
+      if (row.expanded) {
+        this.collapseRowAt(rowIndex);
+      } else {
+        this.set(['rows', rowIndex, 'pending'], true);
+        await this.queryApiList(row.path);
+        this.set(['rows', rowIndex, 'pending'], false);
+      }
+      const postRowCount = this.rows.length;
+      return postRowCount - preRowCount;
+    } else {
+      return 0
+    }
   }
 
   selectNext() {
@@ -430,6 +515,7 @@ class MimNav extends Polymer.Element {
     this.imgitem = row;
     if (!row || !row.path) {
       this.imgsrc = '';
+      this.publishPath('');
       return
     }
 
@@ -448,6 +534,7 @@ class MimNav extends Polymer.Element {
       qParms = qParms + '_=' + row.version;
     }
     this.imgsrc = "/api/image" + row.path + qParms;
+    this.publishPath(row.path);
   }
 
   showDialogHtml(html: string) {
