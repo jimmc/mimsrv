@@ -165,6 +165,13 @@ class MimviewApp extends Polymer.Element {
     }
   }
 
+  fullscreen() {
+    const el = this.$.display;
+    const f = el.requestFullscreen || el.webkitRequestFullscreen ||
+      el.mozRequestFullscreen || el.msRequestFullscreen;
+    f.call(el);
+  }
+
   showKeyBindings() {
     var keys = [];
     for (var key in this.keyMap) {
@@ -191,17 +198,19 @@ class MimviewApp extends Polymer.Element {
     this.addKey('?', 'List key bindings',
         this.showKeyBindings.bind(this));
     this.addKey('e', 'Edit the image description',
-        () => this.editImageDescription())
+        () => this.editImageDescription());
     this.addKey('E', 'Edit the folder description',
-        () => this.editFolderDescription())
+        () => this.editFolderDescription());
+    this.addKey('f', 'Fullscreen mode',
+        () => this.fullscreen());
     this.addKey('r', 'Rotate 90 degrees counterclockwise',
-        () => this.rotateCurrent("+r"))
+        () => this.rotateCurrent("+r"));
     this.addKey('R', 'Rotate 90 degrees clockwise',
-        () => this.rotateCurrent("-r"))
+        () => this.rotateCurrent("-r"));
     this.addKey('x', 'Logout',
         this.logout.bind(this));
     this.addKey('z', 'Zoom to unscaled image or back',
-        () => this.$.nav.zoomCurrent())
+        () => this.$.nav.zoomCurrent());
   }
 
   addKey(key: string, desc: string, f: () => void) {
@@ -219,11 +228,12 @@ class MimviewApp extends Polymer.Element {
       // Ignore presses of the modifier keys
       return;
     }
-    // console.log("Key: ", key);
     const keyFunc = this.keyMap[key];
     this.hideDialog();
     if (keyFunc) {
       keyFunc.f();
+    } else {
+      console.log("Key", key, "not bound");
     }
   }
 
