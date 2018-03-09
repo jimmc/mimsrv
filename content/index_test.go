@@ -192,19 +192,19 @@ func TestRotationFromIndex(t *testing.T) {
   });
 
   if got, want := h.rotationFromIndex("testdata/with-index/no-such-file.jpg"), 0; got != want {
-    t.Errorf("rotation from index for no-such-file: got %d, want %d")
+    t.Errorf("rotation from index for no-such-file: got %d, want %d", got, want)
   }
   if got, want := h.rotationFromIndex("testdata/with-index/image1.jpg"), 0; got != want {
-    t.Errorf("rotation from index for image1: got %d, want %d")
+    t.Errorf("rotation from index for image1: got %d, want %d", got, want)
   }
   if got, want := h.rotationFromIndex("testdata/with-index/image2.jpg"), 0; got != want {
-    t.Errorf("rotation from index for image2: got %d, want %d")
+    t.Errorf("rotation from index for image2: got %d, want %d", got, want)
   }
   if got, want := h.rotationFromIndex("testdata/with-index/image4.jpg"), 90; got != want {
-    t.Errorf("rotation from index for image5: got %d, want %d")
+    t.Errorf("rotation from index for image5: got %d, want %d", got, want)
   }
   if got, want := h.rotationFromIndex("testdata/with-index/image5.jpg"), 180; got != want {
-    t.Errorf("rotation from index for image5: got %d, want %d")
+    t.Errorf("rotation from index for image5: got %d, want %d", got, want)
   }
 }
 
