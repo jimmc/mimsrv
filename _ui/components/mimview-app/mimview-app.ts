@@ -12,10 +12,13 @@ class MimviewApp extends Polymer.Element {
   imgitem: NavItem;
 
   @Polymer.decorators.property({type: Boolean})
-  hascaption: boolean;
+  showcaption: boolean;
 
   @Polymer.decorators.property({type: Boolean})
   loggedIn: boolean;
+
+  allowcaption = true;
+  hascaption = false;
 
   keyMap: {[key: string]: KeyFunc};
 
@@ -127,6 +130,11 @@ class MimviewApp extends Polymer.Element {
     this.$.nav.rotateCurrent(r);
   }
 
+  toggleAllowCaption() {
+    this.allowcaption = !this.allowcaption;
+    this.imgitemChanged();
+  }
+
   async editImageDescription() {
     if (!this.$.mimlogin.hasPermission('edit')) {
       this.showTextDialog('You do not have permission to edit');
@@ -197,6 +205,8 @@ class MimviewApp extends Polymer.Element {
         () => this.$.nav.toggleCurrent());
     this.addKey('?', 'List key bindings',
         this.showKeyBindings.bind(this));
+    this.addKey('c', 'Toggle caption',
+        () => this.toggleAllowCaption());
     this.addKey('e', 'Edit the image description',
         () => this.editImageDescription());
     this.addKey('E', 'Edit the folder description',
@@ -240,6 +250,7 @@ class MimviewApp extends Polymer.Element {
   @Polymer.decorators.observe('imgitem')
   imgitemChanged() {
     this.hascaption = !!(this.imgitem);
+    this.showcaption = this.hascaption && this.allowcaption;
     this.$.image.handleResize();
   }
 
