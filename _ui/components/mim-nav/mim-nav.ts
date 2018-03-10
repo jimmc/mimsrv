@@ -36,20 +36,24 @@ interface NavItem {
   zoom: boolean;        // When true, request unscaled image
 }
 
+// This is the info we pass to mim-image so it can display the image
+interface ImageInfo {
+  path: string;
+  version: number,
+  zoom: boolean;
+}
+
 @Polymer.decorators.customElement('mim-nav')
 class MimNav extends Polymer.Element {
 
   @Polymer.decorators.property({type: Boolean, notify: true})
   loggedIn: boolean;
 
-  @Polymer.decorators.property({type: String, notify: true})
-  imgsrc: string;
+  @Polymer.decorators.property({type: Object, notify: true})
+  imginfo: ImageInfo | undefined;
 
   @Polymer.decorators.property({type: Object, notify: true})
   imgitem: NavItem | undefined;
-
-  @Polymer.decorators.property({type: Object})
-  imgsize: any;
 
   @Polymer.decorators.property({type: Array})
   rows: NavItem[] = [];
@@ -485,7 +489,7 @@ class MimNav extends Polymer.Element {
       };
       const response = await ApiManager.xhrJson(indexUrl, options);
       row.version = row.version + 1;
-      this.imgsizeChanged();    // reload the image at the new version
+      this.redisplayCurrent();
     } catch (e) {
       console.error("rotation failed:", e)
     }
@@ -498,42 +502,25 @@ class MimNav extends Polymer.Element {
     const row = this.rows[this.selectedIndex];
     row.zoom = !row.zoom;
     row.version = row.version + 1;
-    this.selectAt(this.selectedIndex);  // redisplay
+    this.redisplayCurrent();
   }
 
-  @Polymer.decorators.observe('imgsize')
-  imgsizeChanged() {
-    if (this.selectedIndex >= 0) {
-      const row = this.rows[this.selectedIndex];
-      if (!row.isDir) {
-        this.selectAt(this.selectedIndex);
-      }
-    }
+  redisplayCurrent() {
+    this.selectAt(this.selectedIndex);  // redisplay
   }
 
   setImageRow(row?: NavItem) {
     this.imgitem = row;
     if (!row || !row.path) {
-      this.imgsrc = '';
+      this.imginfo = undefined;
       this.publishPath('');
       return
     }
-
-    let qParms = '';
-    if (this.imgsize && !row.zoom) {
-      const height = this.imgsize.height;
-      const width = this.imgsize.width;
-      qParms = '?w=' + width + '&h=' + height;
-    }
-    if (row && row.version) {
-      if (qParms) {
-        qParms = qParms + '&';
-      } else {
-        qParms = '?';
-      }
-      qParms = qParms + '_=' + row.version;
-    }
-    this.imgsrc = "/api/image" + row.path + qParms;
+    this.imginfo = {
+      path: row.path,
+      version: row.version,
+      zoom: row.zoom,
+    } as ImageInfo;
     this.publishPath(row.path);
   }
 

@@ -106,12 +106,12 @@
 	    </paper-listbox>
 	  </paper-menu-button>
         </div>
-        <mim-nav id="nav" imgsrc="{{imgsrc}}" imgitem="{{imgitem}}"
-            imgsize="[[imgsize]]" logged-in="{{loggedIn}}"></mim-nav>
+        <mim-nav id="nav" imginfo="{{imginfo}}" imgitem="{{imgitem}}"
+            logged-in="{{loggedIn}}"></mim-nav>
       </div>
       <div id="display">
         <mim-image id="image" class="[[imgOverflowClass()]]"
-            imgsrc="[[imgsrc]]" imgsize="{{imgsize}}"></mim-image>
+            imginfo="[[imginfo]]"></mim-image>
         <mim-caption id="caption" hidden$=[[!hascaption]] imgitem="[[imgitem]]"></mim-caption>
       </div>
     </vaadin-split-layout>
