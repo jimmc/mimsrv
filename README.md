@@ -1,6 +1,11 @@
 # Mimsrv
 An image server and UI for a simple web photo viewer
 
+See my
+[blog post](http://jim-mcbeath.blogspot.com/2018/03/golang-server-polymer-typescript-client.html)
+for a discussion of why I chose to implement the server in Go and the
+client in Polymer and Typescript.
+
 ## Quick Start
 
 ### Set up the environment
