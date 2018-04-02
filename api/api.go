@@ -28,6 +28,7 @@ func NewHandler(c *Config) http.Handler {
   mux := http.NewServeMux()
   mux.HandleFunc(h.apiPrefix("list"), h.list)
   mux.HandleFunc(h.apiPrefix("image"), h.image)
+  mux.HandleFunc(h.apiPrefix("video"), h.video)
   mux.HandleFunc(h.apiPrefix("index"), h.index)
   mux.HandleFunc(h.apiPrefix("text"), h.text)
   return mux
@@ -89,6 +90,16 @@ func (h *handler) image(w http.ResponseWriter, r *http.Request) {
     Quality: 90,
   }
   jpeg.Encode(w, im, options)
+}
+
+func (h *handler) video(w http.ResponseWriter, r *http.Request) {
+  path := strings.TrimPrefix(r.URL.Path, h.apiPrefix("video"))
+  videoFilePath := h.config.ContentHandler.VideoFilePath(path)
+  if videoFilePath == "" {
+    http.Error(w, "Not a video file", http.StatusBadRequest)
+    return
+  }
+  http.ServeFile(w, r, videoFilePath)
 }
 
 func (h *handler) index(w http.ResponseWriter, r *http.Request) {

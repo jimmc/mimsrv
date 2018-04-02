@@ -1,6 +1,7 @@
 package content
 
 import (
+  "bytes"
   "fmt"
   "image"
   "image/color"
@@ -9,6 +10,7 @@ import (
   "log"
   "net/http"
   "os"
+  "os/exec"
   "path/filepath"
   "sort"
   "strings"
@@ -28,13 +30,15 @@ type Config struct {
 
 type Handler struct {
   config *Config
-  validExts map[string]bool
+  imageExts map[string]bool
+  videoExts map[string]bool
 }
 
 type ListItem struct {
   Name string
   IsDir bool
   Size int64
+  Type string
   ModTime int64          // seconds since the epoch
   ModTimeStr string      // ModTime converted to a string by the server
   Text string
@@ -58,11 +62,14 @@ func NewHandler(c *Config) Handler {
 }
 
 func (h *Handler) init() {
-  h.validExts = map[string]bool {
+  h.imageExts = map[string]bool {
     ".gif": true,
     ".jpeg": true,
     ".jpg": true,
     ".png": true,
+  }
+  h.videoExts = map[string]bool {
+    ".mp4": true,
   }
 }
 
@@ -149,7 +156,7 @@ func (h *Handler) keepFileInList(f os.FileInfo) bool {
     return true;
   }
   ext := strings.ToLower(filepath.Ext(f.Name()))
-  if h.validExts[ext] {
+  if h.imageExts[ext] || h.videoExts[ext] {
     return true;
   }
   return false;
@@ -160,6 +167,12 @@ func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPat
   item.IsDir = f.IsDir()
   item.Size = f.Size()
   item.ModTime = f.ModTime().Unix()
+  ext := strings.ToLower(filepath.Ext(item.Name))
+  if h.imageExts[ext] {
+    item.Type = "image"
+  } else if h.videoExts[ext] {
+    item.Type = "video"
+  }
   t := f.ModTime()
   if loc != nil {
     t = t.In(loc)
@@ -188,18 +201,12 @@ func (h *Handler) loadTextFile(item *ListItem, parentPath string) {
 }
 
 func (h *Handler) Image(path string, width, height, rot int) (image.Image, error, int) {
-  imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
-  f, err := os.Open(imageFilePath)
-  if err != nil {
-    return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
-  }
-  defer f.Close()
-
-  im, _, err := image.Decode(f)
+  im, _, err := h.imageFromPath(path, width, height)
   if err != nil {
     return nil, fmt.Errorf("failed to decode image file: %v", err), http.StatusBadRequest
   }
 
+  imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
   rot = rot + h.rotationFromIndex(imageFilePath)
   if ((rot + 360) / 90) % 2 == 1 {
     width, height = height, width
@@ -227,6 +234,53 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
   }
 
   return im, nil, 0
+}
+
+func (h *Handler) imageFromPath(path string, width, height int) (image.Image, string, error) {
+  ext := filepath.Ext(path)
+  if (h.videoExts[ext]) {
+    return h.imageFromVideo(path, width, height)
+  } else {
+    return h.imageFromFile(path)
+  }
+}
+
+func (h *Handler) imageFromFile(path string) (image.Image, string, error) {
+  imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  f, err := os.Open(imageFilePath)
+  if err != nil {
+    return nil, "", fmt.Errorf("failed to open file: %v", err)
+  }
+  defer f.Close()
+  return image.Decode(f)
+}
+
+func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, string, error) {
+  imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  cmd := exec.Command("ffmpeg",
+      "-i", imageFilePath,
+      "-vframes", "1",
+      "-f", "singlejpeg",
+      "-")
+  var buf bytes.Buffer
+  cmd.Stdout = &buf
+  if err := cmd.Run(); err != nil {
+    log.Printf("Error extracting image from video file %v: %v", path, err)
+    return nil, "", fmt.Errorf("Error extracting image from video file %v: %v", path, err)
+  }
+  r := bytes.NewReader(buf.Bytes())
+  return image.Decode(r)
+}
+
+// VideoFilePath returns the path on disk to the specified video file.
+// If the extension is not one of our video extensions, returns the empty string.
+func (h *Handler) VideoFilePath(path string) string {
+  ext := strings.ToLower(filepath.Ext(path))
+  if !h.videoExts[ext] {
+    return "";          // Not a video file
+  }
+  videoFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  return videoFilePath
 }
 
 func (h *Handler) Text(path string) ([]byte, error, int) {
