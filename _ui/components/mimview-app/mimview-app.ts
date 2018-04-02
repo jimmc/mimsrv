@@ -17,6 +17,15 @@ class MimviewApp extends Polymer.Element {
   @Polymer.decorators.property({type: Boolean})
   loggedIn: boolean;
 
+  @Polymer.decorators.property({type: Boolean})
+  showPlayButton: boolean = false;
+
+  @Polymer.decorators.property({type: Boolean})
+  showVideoPlayer: boolean = false;
+
+  @Polymer.decorators.property({type: String})
+  videoSource: string;
+
   allowcaption = true;
   hascaption = false;
 
@@ -247,11 +256,20 @@ class MimviewApp extends Polymer.Element {
     }
   }
 
+  playClicked() {
+    this.showVideoPlayer = true;
+    this.showPlayButton = false;
+    this.videoSource = '/api/video' + this.imgitem.path;
+    this.$.videoPlayer.load();
+  }
+
   @Polymer.decorators.observe('imgitem')
   imgitemChanged() {
+    this.showVideoPlayer = false;
     this.hascaption = !!(this.imgitem);
     this.showcaption = this.hascaption && this.allowcaption;
     this.$.image.handleResize();
+    this.showPlayButton = this.imgitem && this.imgitem.type == 'video';
   }
 
   @Polymer.decorators.observe('loggedIn')

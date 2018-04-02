@@ -5,6 +5,7 @@ interface ListItem {
   Name: string;
   IsDir: boolean;
   Size: number;
+  Type: string;
   ModTime: number;      // seconds since the epoch
   ModTimeStr: string;   // ModTime converted to string in the server
   Text: string;
@@ -26,6 +27,7 @@ interface NavItem {
   pending: boolean;
   isDir: boolean;
   size: number;
+  type: string;
   modTime: number;
   modTimeStr: string;
   text: string;
@@ -138,6 +140,7 @@ class MimNav extends Polymer.Element {
       expanded: false,
       isDir: listItem.IsDir,
       size: listItem.Size,
+      type: listItem.Type,
       modTime: listItem.ModTime,
       modTimeStr: listItem.ModTimeStr,
       text: listItem.Text,

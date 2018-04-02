@@ -80,6 +80,24 @@
         flex-wrap: nowrap;
         -webkit-flex-warp: nowrap;      /* Safari */
       }
+      #playButton {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 100px;
+        height: 100px;
+        margin-left: -50px;
+        margin-top: -50px;
+        background-color: white;
+        opacity: 0.5;
+        clip-path: polygon(0 0, 100% 50%, 0 100%);
+      }
+      #videoPlayer {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: lightgrey;
+      }
       #image {
         flex: auto;
       }
@@ -110,6 +128,11 @@
             logged-in="{{loggedIn}}"></mim-nav>
       </div>
       <div id="display">
+        <video id="videoPlayer" controls autoplay hidden$=[[!showVideoPlayer]]>
+          <source src=[[videoSource]]>
+        </video>
+        <div id="playButton" hidden$=[[!showPlayButton]] on-click="playClicked">
+        </div>
         <mim-image id="image" class="[[imgOverflowClass()]]"
             imginfo="[[imginfo]]"></mim-image>
         <mim-caption id="caption" hidden$=[[!showcaption]]
