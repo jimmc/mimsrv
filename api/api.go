@@ -94,7 +94,11 @@ func (h *handler) image(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) video(w http.ResponseWriter, r *http.Request) {
   path := strings.TrimPrefix(r.URL.Path, h.apiPrefix("video"))
-  videoFilePath := h.config.ContentHandler.VideoFilePath(path)
+  videoFilePath, err := h.config.ContentHandler.VideoFilePath(path)
+  if err != nil {
+    http.Error(w, "Error on video file", http.StatusInternalServerError)
+    return
+  }
   if videoFilePath == "" {
     http.Error(w, "Not a video file", http.StatusBadRequest)
     return

@@ -22,6 +22,7 @@ import (
 const (
   textExtension = ".txt"
   timeFormat = "3:04:05pm Mon Jan 2, 2006 MST"
+  cacheDir = ".mimcache/"
 )
 
 type Config struct {
@@ -70,6 +71,7 @@ func (h *Handler) init() {
   }
   h.videoExts = map[string]bool {
     ".mp4": true,
+    ".mpg": true,
   }
 }
 
@@ -237,7 +239,7 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
 }
 
 func (h *Handler) imageFromPath(path string, width, height int) (image.Image, string, error) {
-  ext := filepath.Ext(path)
+  ext := strings.ToLower(filepath.Ext(path))
   if (h.videoExts[ext]) {
     return h.imageFromVideo(path, width, height)
   } else {
@@ -256,9 +258,9 @@ func (h *Handler) imageFromFile(path string) (image.Image, string, error) {
 }
 
 func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, string, error) {
-  imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  inputFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
   cmd := exec.Command("ffmpeg",
-      "-i", imageFilePath,
+      "-i", inputFilePath,
       "-vframes", "1",
       "-f", "singlejpeg",
       "-")
@@ -272,15 +274,60 @@ func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, s
   return image.Decode(r)
 }
 
+func (h *Handler) transcodeVideoToCache(path string) error {
+  inputFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  transcodedFilePath := h.mp4PathInCache(path)
+  transcodedFileDir := filepath.Dir(transcodedFilePath)
+  if _, err := os.Stat(transcodedFileDir); os.IsNotExist(err) {
+    log.Printf("Creating cache directory %s", transcodedFileDir)
+    if err := os.Mkdir(transcodedFileDir, 0700); err != nil {
+      return err
+    }
+  }
+  cmd := exec.Command("ffmpeg",
+      "-i", inputFilePath,
+      "-c:v", "libx264",
+      "-preset", "slow",
+      "-crf", "18",
+      "-c:a", "aac",
+      "-strict", "experimental",
+      "-b:a", "128k",
+      transcodedFilePath)
+  log.Printf("Transcoding video file %s to %s", inputFilePath, transcodedFilePath)
+  if err := cmd.Run(); err != nil {
+    log.Printf("Error transcoding video file %v: %v", path, err)
+    return fmt.Errorf("Error transcoding video file %v: %v", path, err)
+  }
+  log.Printf("Done transcoding video")
+  return nil
+}
+
 // VideoFilePath returns the path on disk to the specified video file.
 // If the extension is not one of our video extensions, returns the empty string.
-func (h *Handler) VideoFilePath(path string) string {
+func (h *Handler) VideoFilePath(path string) (string, error) {
   ext := strings.ToLower(filepath.Ext(path))
   if !h.videoExts[ext] {
-    return "";          // Not a video file
+    return "", nil;          // Not a video file
   }
   videoFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
-  return videoFilePath
+  if ext == ".mpg" {
+    transcodedFilePath := h.mp4PathInCache(path)
+    if _, err := os.Stat(transcodedFilePath); os.IsNotExist(err) {
+      if err := h.transcodeVideoToCache(path); err != nil {
+        return "", err
+      }
+    }
+    return transcodedFilePath, nil
+  }
+  return videoFilePath, nil
+}
+
+func (h *Handler) mp4PathInCache(path string) string {
+  inputFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  dir, filename := filepath.Split(inputFilePath)
+  ext := filepath.Ext(filename)
+  base := strings.TrimSuffix(filename, ext)
+  return dir + cacheDir + base + ".mp4"
 }
 
 func (h *Handler) Text(path string) ([]byte, error, int) {
