@@ -155,6 +155,10 @@ func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath strin
 
 func (h *Handler) keepFileInList(f os.FileInfo) bool {
   if f.IsDir() {
+    // Don't display hidden dirs, in particular our cache dir
+    if strings.HasPrefix(f.Name(), ".") {
+      return false;
+    }
     return true;
   }
   ext := strings.ToLower(filepath.Ext(f.Name()))
