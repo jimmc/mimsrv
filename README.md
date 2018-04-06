@@ -36,6 +36,8 @@ client in Polymer and Typescript.
     * If you get an error, you may have an old version of `go`
 1. cd into the mimsrv directory for the remaining work: `cd ~/go/src/github.com/jimmc/mimsrv`
 1. Download polymer dependencies: `(cd _ui && bower install)`
+1. If you want to view video files (mp4 and mpeg), install ffmpeg,
+   such as (on Fedora): `sudo dnf install ffmpeg`
 
 ### Build and test
 
@@ -165,6 +167,23 @@ the image area has focus, but you may need to open an image first in order
 to get focus into the image area.
 
 Use `?` or select Help from the menu to see the list of keyboard shortcuts.
+
+## Video
+
+Image listings in mimsrv can include mp4 and mpg files. When the client
+requests an image for a video file, mimsrv runs ffmpeg to extract the first
+frame of the video file as an image. The UI then overlays
+a white "play" icon on top of that image. When the user clicks the play
+icon, the UI client requests the video file from mimsrv.
+
+When the client requests an mp4 file, mimsrv directly serves it, on the
+assumption that it is a mp4/H.264-encoded video that modern browsers
+understand. When the client requests an mpeg file, mimsrv assumes the
+input file is mpeg-1 encoded, so calls out to ffmpeg to transcode it to
+mp4/H.264. It saves the transcoded file in a cache directory `.mimcache`
+within the directory containing the original mpeg file, so that the next
+request for that mpeg video file can be served quickly from the previously
+transcoded and cached file.
 
 ## About the Repository
 
