@@ -11,6 +11,7 @@ import (
   "net/http"
   "os"
   "os/exec"
+  "path"
   "path/filepath"
   "sort"
   "strings"
@@ -124,16 +125,16 @@ func (h *Handler) readDirFiltered(dirPath string) ([]os.FileInfo, error, int) {
   if err != nil {
     return nil, fmt.Errorf("failed to read dir: %v", err), http.StatusBadRequest
   }
-  files = h.filterOnExtension(files)
+  files = h.filterOnExtension(dirPath, files)
   sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
   return files, nil, 0
 }
 
-func (h *Handler) filterOnExtension(files []os.FileInfo) []os.FileInfo {
+func (h *Handler) filterOnExtension(dirPath string, files []os.FileInfo) []os.FileInfo {
   filteredFiles := make([]os.FileInfo, 0, len(files))
   i := 0
   for _, f := range files {
-    if h.keepFileInList(f) {
+    if h.keepFileInList(dirPath, f) {
       filteredFiles = filteredFiles[:i+1]
       filteredFiles[i] = f
       i = i + 1
@@ -153,8 +154,9 @@ func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath strin
   }
 }
 
-func (h *Handler) keepFileInList(f os.FileInfo) bool {
-  if f.IsDir() {
+func (h *Handler) keepFileInList(dirPath string, f os.FileInfo) bool {
+  isDir := f.IsDir() || isSymlinkToDir(dirPath, f)
+  if isDir {
     // Don't display hidden dirs, in particular our cache dir
     if strings.HasPrefix(f.Name(), ".") {
       return false;
@@ -168,9 +170,35 @@ func (h *Handler) keepFileInList(f os.FileInfo) bool {
   return false;
 }
 
+// SymlinkPointsToDirectory returns true if f refers to a symlink
+// and that symlink points to a directory. If any errors, returns false.
+func isSymlinkToDir(dirPath string, f os.FileInfo) bool {
+  filemode := f.Mode()
+  if filemode & os.ModeSymlink == 0 {
+    return false        // Not a symlink
+  }
+  fPath := path.Join(dirPath, f.Name())
+  dest, err := os.Readlink(fPath)
+  log.Printf("os.Readlink on %s returns %s, err=%v", fPath, dest, err)
+  if err != nil {
+    return false
+  }
+  if !path.IsAbs(dest) {
+    dest = path.Join(dirPath, dest)
+  }
+  log.Printf("dest to Lstat is %s", dest)
+  ff, err := os.Lstat(dest)
+  if err != nil {
+    log.Printf("Lstat error %v", err)
+    return false
+  }
+  log.Printf("IsDir on Lstat result is %v", ff.IsDir())
+  return ff.IsDir()
+}
+
 func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPath string, loc *time.Location) {
   item.Name = f.Name()
-  item.IsDir = f.IsDir()
+  item.IsDir = f.IsDir() || isSymlinkToDir(parentPath, f)
   item.Size = f.Size()
   item.ModTime = f.ModTime().Unix()
   ext := strings.ToLower(filepath.Ext(item.Name))
