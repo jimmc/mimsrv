@@ -31,6 +31,7 @@ interface NavItem {
   modTime: number;
   modTimeStr: string;
   text: string;
+  textWithoutFlags: string;
   textError: string;
   index: string;
   filtered: boolean;
@@ -144,9 +145,18 @@ class MimNav extends Polymer.Element {
       modTime: listItem.ModTime,
       modTimeStr: listItem.ModTimeStr,
       text: listItem.Text,
+      textWithoutFlags: this.stripFlags(listItem.Text),
       textError: listItem.TextError,
       version: 0,
     } as NavItem;
+  }
+
+  stripFlags(textWithFlags: string): string {
+    const lines = textWithFlags.split('\n');
+    while (lines && lines[0].startsWith('!')) {
+      lines.shift()
+    }
+    return lines.join('\n')
   }
 
   updateDirRows(dir: string, rows: NavItem[], list: ListResponse) {

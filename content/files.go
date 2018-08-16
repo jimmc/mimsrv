@@ -11,9 +11,7 @@ import (
   "net/http"
   "os"
   "os/exec"
-  "path"
   "path/filepath"
-  "sort"
   "strings"
   "time"
 
@@ -107,7 +105,9 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
     }
   }
 
-  result := h.mapFileInfosToListResult(files, dirPath, loc)
+  flags := loadDirFlags(dirPath)
+
+  result := h.mapFileInfosToListResult(files, dirPath, loc, flags.ignoreFileTimes)
   result.UnfilteredFileCount = unfilteredFileCount
   if imageIndex != nil {
     result.IndexName = imageIndex.indexName
@@ -115,88 +115,19 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   return result, nil, 0
 }
 
-func (h *Handler) readDirFiltered(dirPath string) ([]os.FileInfo, error, int) {
-  f, err := os.Open(dirPath)
-  if err != nil {
-    return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
-  }
-  defer f.Close()
-  files, err := f.Readdir(0)       // Read all file names
-  if err != nil {
-    return nil, fmt.Errorf("failed to read dir: %v", err), http.StatusBadRequest
-  }
-  files = h.filterOnExtension(dirPath, files)
-  sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
-  return files, nil, 0
-}
-
-func (h *Handler) filterOnExtension(dirPath string, files []os.FileInfo) []os.FileInfo {
-  filteredFiles := make([]os.FileInfo, 0, len(files))
-  i := 0
-  for _, f := range files {
-    if h.keepFileInList(dirPath, f) {
-      filteredFiles = filteredFiles[:i+1]
-      filteredFiles[i] = f
-      i = i + 1
-    }
-  }
-  return filteredFiles
-}
-
-func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath string, loc *time.Location) *ListResult {
+func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath string,
+    loc *time.Location, ignoreFileTimes bool) *ListResult {
   n := len(files)
   list := make([]ListItem, n, n)
   for i, f := range files {
-    h.mapFileInfoToListItem(f, &list[i], parentPath, loc)
+    h.mapFileInfoToListItem(f, &list[i], parentPath, loc, ignoreFileTimes)
   }
   return &ListResult{
     Items: list,
   }
 }
 
-func (h *Handler) keepFileInList(dirPath string, f os.FileInfo) bool {
-  isDir := f.IsDir() || isSymlinkToDir(dirPath, f)
-  if isDir {
-    // Don't display hidden dirs, in particular our cache dir
-    if strings.HasPrefix(f.Name(), ".") {
-      return false;
-    }
-    return true;
-  }
-  ext := strings.ToLower(filepath.Ext(f.Name()))
-  if h.imageExts[ext] || h.videoExts[ext] {
-    return true;
-  }
-  return false;
-}
-
-// SymlinkPointsToDirectory returns true if f refers to a symlink
-// and that symlink points to a directory. If any errors, returns false.
-func isSymlinkToDir(dirPath string, f os.FileInfo) bool {
-  filemode := f.Mode()
-  if filemode & os.ModeSymlink == 0 {
-    return false        // Not a symlink
-  }
-  fPath := path.Join(dirPath, f.Name())
-  dest, err := os.Readlink(fPath)
-  log.Printf("os.Readlink on %s returns %s, err=%v", fPath, dest, err)
-  if err != nil {
-    return false
-  }
-  if !path.IsAbs(dest) {
-    dest = path.Join(dirPath, dest)
-  }
-  log.Printf("dest to Lstat is %s", dest)
-  ff, err := os.Lstat(dest)
-  if err != nil {
-    log.Printf("Lstat error %v", err)
-    return false
-  }
-  log.Printf("IsDir on Lstat result is %v", ff.IsDir())
-  return ff.IsDir()
-}
-
-func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPath string, loc *time.Location) {
+func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPath string, loc *time.Location, ignoreFileTimes bool) {
   item.Name = f.Name()
   item.IsDir = f.IsDir() || isSymlinkToDir(parentPath, f)
   item.Size = f.Size()
@@ -207,11 +138,13 @@ func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPat
   } else if h.videoExts[ext] {
     item.Type = "video"
   }
-  t := f.ModTime()
-  if loc != nil {
-    t = t.In(loc)
+  if !ignoreFileTimes {
+    t := f.ModTime()
+    if loc != nil {
+      t = t.In(loc)
+    }
+    item.ModTimeStr = t.Format(timeFormat)
   }
-  item.ModTimeStr = t.Format(timeFormat)
   h.loadTextFile(item, parentPath)
 }
 

@@ -89,8 +89,8 @@
           <span hidden$=[[row.isDir]]>
             <span class="path">[[row.name]]</span>
             <span class="size">[[sizeAsString(row)]]</span><br>
-            <span class="date">[[row.modTimeStr]]</span><br>
-            <span class="text">[[row.text]]</span>
+            <span class="date" hidden$=[[!row.modTimeStr]]>[[row.modTimeStr]]<br></span>
+            <span class="text">[[row.textWithoutFlags]]</span>
             <span class="textError">[[row.textError]]</span>
           </span>
           <span hidden$=[[!row.isDir]]>
@@ -98,7 +98,7 @@
             <span class="filtermark" hidden=[[!row.filtered]]>*</span
               ><span class="index">[[row.index]]</span>
             <br>
-            <span class="text">[[row.text]]</span>
+            <span class="text">[[row.textWithoutFlags]]</span>
             <span class="textError">[[row.textError]]</span>
           </span>
         </paper-item>
