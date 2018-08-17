@@ -153,7 +153,7 @@ class MimNav extends Polymer.Element {
 
   stripFlags(textWithFlags: string): string {
     const lines = textWithFlags.split('\n');
-    while (lines && lines[0].startsWith('!')) {
+    while (lines && lines[0] && lines[0].startsWith('!')) {
       lines.shift()
     }
     return lines.join('\n')
