@@ -143,7 +143,7 @@ class MimNav extends Polymer.Element {
       size: listItem.Size,
       type: listItem.Type,
       modTime: listItem.ModTime,
-      modTimeStr: listItem.ModTimeStr,
+      modTimeStr: this.dtFromFlags(listItem.Text) || listItem.ModTimeStr,
       text: listItem.Text,
       textWithoutFlags: this.stripFlags(listItem.Text),
       textError: listItem.TextError,
@@ -157,6 +157,20 @@ class MimNav extends Polymer.Element {
       lines.shift()
     }
     return lines.join('\n')
+  }
+
+  dtFromFlags(textWithFlags: string): string {
+    if (!textWithFlags) {
+      return ''
+    }
+    const lines = textWithFlags.split('\n');
+    for (const l in lines) {
+      const line = lines[l]
+      if (line && line.startsWith('!dt=')) {
+        return line.substring(4);
+      }
+    }
+    return ''
   }
 
   updateDirRows(dir: string, rows: NavItem[], list: ListResponse) {
@@ -474,6 +488,13 @@ class MimNav extends Polymer.Element {
       return;
     }
     this.set(["rows", index, "text"], text);
+    this.set(["rows", index, "textWithoutFlags"], this.stripFlags(text));
+    // If we overrode the modTimeStr from the server with a dt string
+    // from the image text file, we lost that server-provided info.
+    // If we don't have the dt string any more, we have nothing else,
+    // so we just leave it there.
+    this.set(["rows", index, "modTimeStr"],
+        this.dtFromFlags(text) || this.rows[index].modTimeStr);
   }
 
   async rotateCurrent(value: string) {
