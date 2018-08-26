@@ -64,7 +64,7 @@
     </style>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
-        <paper-item on-click="rowClicked" class$="[[getRowClass(row, selectedIndex)]]">
+        <paper-item on-tap="rowClicked" class$="[[getRowClass(row, selectedIndex)]]">
           <span class="spacer">
             <template is="dom-repeat" items="[[indentsForRow(row)]]">
               &nbsp;
@@ -76,9 +76,9 @@
               </span>
               <span hidden$=[[row.pending]]>
                 <iron-icon icon="hardware:keyboard-arrow-right"
-                    hidden$=[[row.expanded]] on-click="rowToggled"></iron-icon>
+                    hidden$=[[row.expanded]] on-tap="rowToggled"></iron-icon>
                 <iron-icon icon="hardware:keyboard-arrow-down"
-                    hidden$=[[!row.expanded]] on-click="rowToggled"></iron-icon>
+                    hidden$=[[!row.expanded]] on-tap="rowToggled"></iron-icon>
               </span>
             </span>
             <span class="invisible" hidden$=[[row.isDir]]>

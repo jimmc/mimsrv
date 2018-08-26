@@ -30,6 +30,7 @@ class MimviewApp extends Polymer.Element {
   hascaption = false;
 
   keyMap: {[key: string]: KeyFunc};
+  touchStart: any;      // e.changedTouches[0] for a touchstart event
 
   ready() {
     super.ready();
@@ -38,6 +39,8 @@ class MimviewApp extends Polymer.Element {
     this.$.nav.addEventListener('mimdialog', this.onMimDialog.bind(this));
     this.$.main.addEventListener('keydown', this.keydown.bind(this));
     this.$.image.addEventListener('mimchecklogin', this.checkLogin.bind(this));
+    this.$.main.addEventListener('touchstart', this.touchstart.bind(this));
+    this.$.main.addEventListener('touchend', this.touchend.bind(this));
   }
 
   async showHtmlDialog(html: string) {
@@ -237,6 +240,30 @@ class MimviewApp extends Polymer.Element {
     keyFunc.desc = desc;
     keyFunc.f = f;
     this.keyMap[key] = keyFunc;
+  }
+
+  touchstart(e: any) {
+    e.preventDefault();
+    this.touchStart = e.changedTouches[0]
+  }
+
+  touchend(e: any) {
+    const touchEnd = e.changedTouches[0]
+    const deltaX = touchEnd.clientX - this.touchStart.clientX
+    const deltaY = touchEnd.clientY - this.touchStart.clientY
+    // We will treat swipe-right and swipe-down the same.
+    const totalDelta = deltaX + deltaY
+    const swipeThreshold = 100
+    if (totalDelta > swipeThreshold) {
+        // Swipe right or down
+        this.$.nav.selectPrevious();
+        e.preventDefault();
+    } else if (-totalDelta > swipeThreshold) {
+        // Swipe left or up
+        this.$.nav.selectNext();
+        e.preventDefault();
+    }
+    // If small delta, let it get processed as a tap/click.
   }
 
   keydown(e: any) {

@@ -119,8 +119,8 @@
 	    <paper-icon-button icon="menu" slot="dropdown-trigger" alt="menu">
             </paper-icon-button>
 	    <paper-listbox slot="dropdown-content" id="menuselection" multi>
-	      <paper-item on-click="helpClicked">Help</paper-item>
-	      <paper-item on-click="logoutClicked">Logout</paper-item>
+	      <paper-item on-tap="helpClicked">Help</paper-item>
+	      <paper-item on-tap="logoutClicked">Logout</paper-item>
 	    </paper-listbox>
 	  </paper-menu-button>
         </div>
@@ -131,7 +131,7 @@
         <video id="videoPlayer" controls autoplay hidden$=[[!showVideoPlayer]]>
           <source src=[[videoSource]]>
         </video>
-        <div id="playButton" hidden$=[[!showPlayButton]] on-click="playClicked">
+        <div id="playButton" hidden$=[[!showPlayButton]] on-tap="playClicked">
         </div>
         <mim-image id="image" class="[[imgOverflowClass()]]"
             imginfo="[[imginfo]]"></mim-image>
