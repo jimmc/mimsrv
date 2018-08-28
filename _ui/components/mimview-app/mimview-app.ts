@@ -31,6 +31,7 @@ class MimviewApp extends Polymer.Element {
 
   keyMap: {[key: string]: KeyFunc};
   touchStart: any;      // e.changedTouches[0] for a touchstart event
+  touchStartTime: number;
 
   ready() {
     super.ready();
@@ -39,8 +40,8 @@ class MimviewApp extends Polymer.Element {
     this.$.nav.addEventListener('mimdialog', this.onMimDialog.bind(this));
     this.$.main.addEventListener('keydown', this.keydown.bind(this));
     this.$.image.addEventListener('mimchecklogin', this.checkLogin.bind(this));
-    this.$.main.addEventListener('touchstart', this.touchstart.bind(this));
-    this.$.main.addEventListener('touchend', this.touchend.bind(this));
+    this.$.image.addEventListener('touchstart', this.touchstart.bind(this));
+    this.$.image.addEventListener('touchend', this.touchend.bind(this));
   }
 
   async showHtmlDialog(html: string) {
@@ -243,11 +244,20 @@ class MimviewApp extends Polymer.Element {
   }
 
   touchstart(e: any) {
-    e.preventDefault();
+    const now = Date.now();
+    if (now - this.touchStartTime < 300) {
+        this.doubleTouch(e);
+        e.preventDefault();
+        return;
+    }
+    this.touchStartTime = now;
     this.touchStart = e.changedTouches[0]
   }
 
   touchend(e: any) {
+    if (this.imgitem && this.imgitem.zoom) {
+        return;         // Don't process swipes when zoomed
+    }
     const touchEnd = e.changedTouches[0]
     const deltaX = touchEnd.clientX - this.touchStart.clientX
     const deltaY = touchEnd.clientY - this.touchStart.clientY
@@ -264,6 +274,14 @@ class MimviewApp extends Polymer.Element {
         e.preventDefault();
     }
     // If small delta, let it get processed as a tap/click.
+  }
+
+  doubleTouch(e: any) {
+    if (!this.imgitem) {
+        return;         // No image, don't worry about zoom
+    }
+    this.$.nav.zoomCurrent();  // Zoom or unzoom
+    e.preventDefault();
   }
 
   keydown(e: any) {
