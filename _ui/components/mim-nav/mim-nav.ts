@@ -64,11 +64,26 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Number})
   selectedIndex: number;
 
+  @Polymer.decorators.property({type: Object})
+  route: any;
+
   publishChannel: BroadcastChannel;
   subscribeChannel: BroadcastChannel;
+  requestedLocation: string;
 
   ready() {
     super.ready();
+    this.requestedLocation = this.route.__queryParams.loc;
+    // Make sure requestedLocation starts with a slash and doesn't end with one
+    if (this.requestedLocation.endsWith('/')) {
+      this.requestedLocation =
+        this.requestedLocation.substr(0, this.requestedLocation.length - 1);
+      this.set(['route', '__queryParams', 'loc'], this.requestedLocation);
+    }
+    if (!this.requestedLocation.startsWith('/')) {
+      this.requestedLocation = '/' + this.requestedLocation;
+      this.set(['route', '__queryParams', 'loc'], this.requestedLocation);
+    }
     this.queryApiList('');
     this.setupChannels();
   }
@@ -114,6 +129,7 @@ class MimNav extends Polymer.Element {
 
   // Returns the delta count for this.rows
   async queryApiList(dir: string) {
+    console.log("queryApiList:", dir);
     try {
       const listUrl = "/api/list/" + dir;
       const response = await ApiManager.xhrJson(listUrl);
@@ -176,6 +192,7 @@ class MimNav extends Polymer.Element {
   updateDirRows(dir: string, rows: NavItem[], list: ListResponse) {
     if (!dir) {
       this.rows = rows;
+      this.handleRequestedLocation(dir);
       return;
     }
     // We are updating in the middle somewhere, look for our dir,
@@ -194,6 +211,38 @@ class MimNav extends Polymer.Element {
       .concat(this.rows.slice(nextIndex, this.rows.length));
     this.rows = updatedRows;
     this.set(['rows', index, 'expanded'], true);
+    this.handleRequestedLocation(dir);
+  }
+
+  // Looks to see if we have a requested location, and if so, whether we
+  // still need to descend down that path.
+  handleRequestedLocation(dir: string) {
+    if (!this.requestedLocation) {
+      console.log("No requestedLocation");
+      return;           // No requested location, so no need to check anything here.
+    }
+    const index = this.rows.findIndex((row) => row.path == this.requestedLocation);
+    if (index >= 0) {
+      console.log("Found requestedLocation in current rows");
+      this.openPath(this.requestedLocation);
+      return;
+    }
+    if (dir == this.requestedLocation) {
+      console.log("Made it to requestedLocation");
+      this.requestedLocation = '';
+      return;           // We made it to the requested location
+    }
+    console.log("At ", dir, ", still need to get to requestedLocation ", this.requestedLocation);
+    const dirParts = dir.split('/');
+    const locParts = this.requestedLocation.split('/');
+    if (dirParts.length >= locParts.length) {
+      console.log("Length mismatch in requestedLocation?");
+      this.requestedLocation = '';
+      return;
+    }
+    const nextDir = dir + '/' + locParts[dirParts.length];
+    console.log("nextDir:", nextDir);
+    this.queryApiList(nextDir);
   }
 
   // Looks at the level of the row at the specified index and returns the
@@ -284,6 +333,7 @@ class MimNav extends Polymer.Element {
     this.selectedIndex = index;
     this.scrollRowIntoView(index);
     const row = this.rows[index];
+    this.set(['route', '__queryParams', 'loc'], row.path);
     if (row.isDir) {
       this.setImageRow(undefined);
     } else {

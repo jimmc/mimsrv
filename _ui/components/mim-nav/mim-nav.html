@@ -1,5 +1,6 @@
 <link rel="import" href="../../modules/api-manager/api-manager.html">
 
+<link rel="import" href="../../bower_components/app-route/app-location.html">
 <link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
@@ -62,6 +63,7 @@
         margin-right: 12px;
       }
     </style>
+    <app-location route="{{route}}"></app-location>
     <div id="listContainer">
       <template is="dom-repeat" id="list" items="[[rows]]" as="row">
         <paper-item on-tap="rowClicked" class$="[[getRowClass(row, selectedIndex)]]">
