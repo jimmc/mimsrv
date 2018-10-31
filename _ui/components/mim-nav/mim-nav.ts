@@ -73,19 +73,25 @@ class MimNav extends Polymer.Element {
 
   ready() {
     super.ready();
-    this.requestedLocation = this.route.__queryParams.loc;
-    // Make sure requestedLocation starts with a slash and doesn't end with one
-    if (this.requestedLocation.endsWith('/')) {
-      this.requestedLocation =
-        this.requestedLocation.substr(0, this.requestedLocation.length - 1);
-      this.set(['route', '__queryParams', 'loc'], this.requestedLocation);
-    }
-    if (!this.requestedLocation.startsWith('/')) {
-      this.requestedLocation = '/' + this.requestedLocation;
-      this.set(['route', '__queryParams', 'loc'], this.requestedLocation);
-    }
+    this.setupRequestedLocation();
     this.queryApiList('');
     this.setupChannels();
+  }
+
+  setupRequestedLocation() {
+    let loc = this.route.__queryParams.loc;
+    if (typeof loc === 'undefined') {
+      return;
+    }
+    // Make sure requestedLocation starts with a slash and doesn't end with one
+    if (loc.endsWith('/')) {
+      loc = loc.substr(0, loc.length - 1);
+    }
+    if (!loc.startsWith('/')) {
+      loc = '/' + loc;
+    }
+    this.requestedLocation = loc;
+    this.set(['route', '__queryParams', 'loc'], loc);
   }
 
   setupChannels() {
