@@ -76,6 +76,7 @@ class MimNav extends Polymer.Element {
   publishChannel: BroadcastChannel;
   subscribeChannel: BroadcastChannel;
   requestedLocation: string;
+  preloadCount = 4;
 
   ready() {
     super.ready();
@@ -334,12 +335,12 @@ class MimNav extends Polymer.Element {
       return;
     }
     this.selectAt(e.model.index);
-    this.preloadAt(e.model.index + 1);
+    this.preloadN(e.model.index, this.preloadCount, 1);
   }
 
   rowToggled(e: any) {
     this.selectAt(e.model.index);
-    this.preloadAt(e.model.index + 1);
+    this.preloadN(e.model.index, this.preloadCount, 1);
     this.toggleCurrent();
   }
 
@@ -352,6 +353,16 @@ class MimNav extends Polymer.Element {
       this.setImageRow(undefined);
     } else {
       this.setImageRow(row);
+    }
+  }
+
+  // Preload multiple images. Delta should be 1 or -1 for preloading
+  // when moving forwards or backwards. Preloads are relative to index.
+  preloadN(index: number, count: number, delta: number) {
+    while (count > 0) {
+        index += delta;
+        this.preloadAt(index)
+        count--;
     }
   }
 
@@ -404,7 +415,7 @@ class MimNav extends Polymer.Element {
       }
     } else {
       this.selectAt(index);     // Select the image
-      this.preloadAt(index + 1);
+      this.preloadN(index, this.preloadCount, 1);
     }
   }
 
@@ -455,7 +466,8 @@ class MimNav extends Polymer.Element {
       } else {
         this.scrollRowIntoView(this.selectedIndex + 2);
         this.selectAt(this.selectedIndex + 1);
-        this.preloadAt(this.selectedIndex + 2);
+        // selectAt updates selectedIndex
+        this.preloadN(this.selectedIndex, this.preloadCount, 1);
       }
     }
   }
@@ -473,7 +485,7 @@ class MimNav extends Polymer.Element {
       } else {
         this.scrollRowIntoView(this.selectedIndex + 1);
         this.selectAt(this.selectedIndex);
-        this.preloadAt(this.selectedIndex + 1);
+        this.preloadN(this.selectedIndex, this.preloadCount, 1);
       }
     }
   }
@@ -488,7 +500,7 @@ class MimNav extends Polymer.Element {
         this.scrollRowIntoView(this.selectedIndex - 2);
         this.selectAt(this.selectedIndex - 1);
         // selectAt updates this.selectedIndex
-        this.preloadAt(this.selectedIndex - 1);
+        this.preloadN(this.selectedIndex, this.preloadCount, -1);
       }
     }
   }
@@ -502,7 +514,7 @@ class MimNav extends Polymer.Element {
         this.scrollRowIntoView(this.selectedIndex - 2);
         this.selectAt(this.selectedIndex - 1);
         // selectAt updates this.selectedIndex
-        this.preloadAt(this.selectedIndex - 1);
+        this.preloadN(this.selectedIndex, this.preloadCount, -1);
         return;
       }
       this.setImageRow(undefined);
@@ -514,7 +526,7 @@ class MimNav extends Polymer.Element {
           this.scrollRowIntoView(prevIndexUnexpanded + 1);
           this.scrollRowIntoView(prevIndexUnexpanded - 1);
           this.selectAt(prevIndexUnexpanded);
-          this.preloadAt(prevIndexUnexpanded - 1);
+          this.preloadN(prevIndexUnexpanded, this.preloadCount, -1);
           return;
         }
         const preRowCount = this.rows.length;
@@ -630,7 +642,7 @@ class MimNav extends Polymer.Element {
 
   redisplayCurrent() {
     this.selectAt(this.selectedIndex);  // redisplay
-    this.preloadAt(this.selectedIndex + 1);
+    this.preloadN(this.selectedIndex, this.preloadCount, 1);
   }
 
   // Set the row item so that the corresponding image gets displayed.
@@ -661,6 +673,11 @@ class MimNav extends Polymer.Element {
       version: row.version,
       zoom: row.zoom,
     } as ImageInfo;
+  }
+
+  // Preload the image on the specified row.
+  setPre2ImageRow(row?: NavItem) {
+    this.setPreImageRow(row);
   }
 
   showDialogHtml(html: string) {

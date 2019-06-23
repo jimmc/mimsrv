@@ -89,15 +89,15 @@ class MimImage extends Polymer.Element {
   // When imginfo changes, we load a new current image.
   @Polymer.decorators.observe('imginfo')
   imginfoChanged() {
-    this.imgsrc = ''    // Clear it first so size calculations work correctly.
-    this.imgsrc = this.imginfoToImgsrc(this.imginfo, this.imgitem, true)
+    this.imgsrc = '';    // Clear it first so size calculations work correctly.
+    this.imgsrc = this.imginfoToImgsrc(this.imginfo, this.imgitem, true);
   }
 
-  // When preimginfo changes, we preload the next image.
+  // When preimginfo changes, we preload that image.
   @Polymer.decorators.observe('preimginfo')
   preimginfoChanged() {
-    this.preimgsrc = ''
-    this.preimgsrc = this.imginfoToImgsrc(this.preimginfo, this.preimgitem, false)
+    const img = new Image();
+    img.src = this.imginfoToImgsrc(this.preimginfo, this.preimgitem, false);
   }
 
   // Given an imginfo, generate the API source string to load that image.
@@ -140,6 +140,9 @@ class MimImage extends Polymer.Element {
           height = this.imageHeightWithCaption;
         } else {
           height = this.imageHeightNoCaption;
+        }
+        if (height == 0) {
+          height = this.offsetHeight;
         }
       }
       const width = this.offsetWidth;
