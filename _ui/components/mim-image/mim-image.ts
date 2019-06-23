@@ -16,6 +16,10 @@ class MimImage extends Polymer.Element {
   @Polymer.decorators.property({type: Object})
   imginfo: any;
 
+  // imgitem is our input data that includes the caption
+  @Polymer.decorators.property({type: Object})
+  imgitem: NavItem;
+
   // preimgsrc is the API path for preloading the next image
   @Polymer.decorators.property({type: String})
   preimgsrc: string;
@@ -24,10 +28,17 @@ class MimImage extends Polymer.Element {
   @Polymer.decorators.property({type: Object})
   preimginfo: any;
 
+  // preimgitem is the data for the preload image that includes its caption
+  @Polymer.decorators.property({type: Object})
+  preimgitem: NavItem;
+
   lastResize = 0;       // Time of last resize
   maxResizeDelay = 500;    // We do at least one resize after this much time
   resizeTimeoutId = 0;  // Timer ID for dealing with resizes
   resizeTimeoutDelay = 100;  // Wait this long after event before resizing
+
+  imageHeightNoCaption = 0;
+  imageHeightWithCaption = 0;
 
   ready() {
     super.ready();
@@ -79,14 +90,14 @@ class MimImage extends Polymer.Element {
   @Polymer.decorators.observe('imginfo')
   imginfoChanged() {
     this.imgsrc = ''    // Clear it first so size calculations work correctly.
-    this.imgsrc = this.imginfoToImgsrc(this.imginfo)
+    this.imgsrc = this.imginfoToImgsrc(this.imginfo, this.imgitem, true)
   }
 
   // When preimginfo changes, we preload the next image.
   @Polymer.decorators.observe('preimginfo')
   preimginfoChanged() {
     this.preimgsrc = ''
-    this.preimgsrc = this.imginfoToImgsrc(this.preimginfo)
+    this.preimgsrc = this.imginfoToImgsrc(this.preimginfo, this.preimgitem, false)
   }
 
   // Given an imginfo, generate the API source string to load that image.
@@ -98,14 +109,39 @@ class MimImage extends Polymer.Element {
   // will get fixed, but right now this code is taking the easy approach
   // on the assumption that much of the time the next image will have a
   // similar size caption.
-  imginfoToImgsrc(imginfo: any) {
+  imginfoToImgsrc(imginfo: any, imgitem: NavItem, isDisplayed: boolean) {
     if (!imginfo) {
       return '';
+    }
+    let caption = ''
+    if (imgitem && imgitem.text) {
+      caption = imgitem.text;
     }
     const row = imginfo;
     let qParms = '';
     if (!row.zoom) {
-      const height = this.offsetHeight;
+      let height = this.offsetHeight;
+      if (isDisplayed) {
+        // If we are displaying this image, we have the real height,
+        // so we save that so we can apply it to the preload image.
+        if (!!caption) {
+          // As a first approximation, we assume all captions take up the
+          // same amount of vertial space, so we only distinguish between
+          // caption or no-caption. This means if we get an image that has
+          // a long caption that takes up multiple lines on the screen,
+          // our preloading won't work as we move past that image.
+          this.imageHeightWithCaption = height;
+        } else {
+          this.imageHeightNoCaption = height;
+        }
+      } else {
+        // We pick our height based on whether we have a caption.
+        if (!!caption) {
+          height = this.imageHeightWithCaption;
+        } else {
+          height = this.imageHeightNoCaption;
+        }
+      }
       const width = this.offsetWidth;
       qParms = '?w=' + width + '&h=' + height;
     }

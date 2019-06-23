@@ -61,6 +61,9 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Object, notify: true})
   preimginfo: ImageInfo | undefined;
 
+  @Polymer.decorators.property({type: Object, notify: true})
+  preimgitem: NavItem | undefined;
+
   @Polymer.decorators.property({type: Array})
   rows: NavItem[] = [];
 
@@ -648,6 +651,7 @@ class MimNav extends Polymer.Element {
 
   // Preload the image on the specified row.
   setPreImageRow(row?: NavItem) {
+    this.preimgitem = row;
     if (!row || !row.path) {
       this.preimginfo = undefined;
       return
