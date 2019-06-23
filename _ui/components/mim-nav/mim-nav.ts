@@ -238,6 +238,7 @@ class MimNav extends Polymer.Element {
     if (index >= 0) {
       console.log("Found requestedLocation in current rows");
       this.openPath(this.requestedLocation);
+      this.requestedLocation = '';
       return;
     }
     if (dir == this.requestedLocation) {
