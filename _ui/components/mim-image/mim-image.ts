@@ -16,13 +16,13 @@ class MimImage extends Polymer.Element {
   @Polymer.decorators.property({type: Object})
   imginfo: any;
 
-  // nextimgsrc is the API path for preloading the next image
+  // preimgsrc is the API path for preloading the next image
   @Polymer.decorators.property({type: String})
-  nextimgsrc: string;
+  preimgsrc: string;
 
-  // nextimginfo is our input data for preloading the next image
+  // preimginfo is our input data for preloading the next image
   @Polymer.decorators.property({type: Object})
-  nextimginfo: any;
+  preimginfo: any;
 
   lastResize = 0;       // Time of last resize
   maxResizeDelay = 500;    // We do at least one resize after this much time
@@ -82,11 +82,11 @@ class MimImage extends Polymer.Element {
     this.imgsrc = this.imginfoToImgsrc(this.imginfo)
   }
 
-  // When nextimginfo changes, we preload the next image.
-  @Polymer.decorators.observe('nextimginfo')
-  nextimginfoChanged() {
-    this.nextimgsrc = ''
-    this.nextimgsrc = this.imginfoToImgsrc(this.nextimginfo)
+  // When preimginfo changes, we preload the next image.
+  @Polymer.decorators.observe('preimginfo')
+  preimginfoChanged() {
+    this.preimgsrc = ''
+    this.preimgsrc = this.imginfoToImgsrc(this.preimginfo)
   }
 
   // Given an imginfo, generate the API source string to load that image.

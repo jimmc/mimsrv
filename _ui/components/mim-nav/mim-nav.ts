@@ -59,7 +59,7 @@ class MimNav extends Polymer.Element {
   imgitem: NavItem | undefined;
 
   @Polymer.decorators.property({type: Object, notify: true})
-  nextimginfo: ImageInfo | undefined;
+  preimginfo: ImageInfo | undefined;
 
   @Polymer.decorators.property({type: Array})
   rows: NavItem[] = [];
@@ -331,10 +331,12 @@ class MimNav extends Polymer.Element {
       return;
     }
     this.selectAt(e.model.index);
+    this.preloadAt(e.model.index + 1);
   }
 
   rowToggled(e: any) {
     this.selectAt(e.model.index);
+    this.preloadAt(e.model.index + 1);
     this.toggleCurrent();
   }
 
@@ -348,21 +350,20 @@ class MimNav extends Polymer.Element {
     } else {
       this.setImageRow(row);
     }
-    this.selectNextAt(index + 1);
   }
 
-  // If the given index is a valid image, use the next-image
+  // If the given index is a valid image, use the preload
   // mechanism to preload it.
-  selectNextAt(index: number) {
+  preloadAt(index: number) {
     if (index < 0 || index >= this.rows.length) {
-      this.setNextImageRow(undefined);
+      this.setPreImageRow(undefined);
       return;
     }
     const row = this.rows[index];
     if (row.isDir) {
-      this.setNextImageRow(undefined);
+      this.setPreImageRow(undefined);
     } else {
-      this.setNextImageRow(row);
+      this.setPreImageRow(row);
     }
   }
 
@@ -400,6 +401,7 @@ class MimNav extends Polymer.Element {
       }
     } else {
       this.selectAt(index);     // Select the image
+      this.preloadAt(index + 1);
     }
   }
 
@@ -450,6 +452,7 @@ class MimNav extends Polymer.Element {
       } else {
         this.scrollRowIntoView(this.selectedIndex + 2);
         this.selectAt(this.selectedIndex + 1);
+        this.preloadAt(this.selectedIndex + 2);
       }
     }
   }
@@ -467,6 +470,7 @@ class MimNav extends Polymer.Element {
       } else {
         this.scrollRowIntoView(this.selectedIndex + 1);
         this.selectAt(this.selectedIndex);
+        this.preloadAt(this.selectedIndex + 1);
       }
     }
   }
@@ -480,6 +484,8 @@ class MimNav extends Polymer.Element {
       } else {
         this.scrollRowIntoView(this.selectedIndex - 2);
         this.selectAt(this.selectedIndex - 1);
+        // selectAt updates this.selectedIndex
+        this.preloadAt(this.selectedIndex - 1);
       }
     }
   }
@@ -491,7 +497,10 @@ class MimNav extends Polymer.Element {
       if (!row.isDir) {
         this.scrollRowIntoView(this.selectedIndex);
         this.scrollRowIntoView(this.selectedIndex - 2);
-        return this.selectAt(this.selectedIndex - 1);
+        this.selectAt(this.selectedIndex - 1);
+        // selectAt updates this.selectedIndex
+        this.preloadAt(this.selectedIndex - 1);
+        return;
       }
       this.setImageRow(undefined);
       const prevIndexUnexpanded = this.findPreviousUnexpandedOrFile(
@@ -501,7 +510,9 @@ class MimNav extends Polymer.Element {
         if (!row.isDir) {
           this.scrollRowIntoView(prevIndexUnexpanded + 1);
           this.scrollRowIntoView(prevIndexUnexpanded - 1);
-          return this.selectAt(prevIndexUnexpanded);
+          this.selectAt(prevIndexUnexpanded);
+          this.preloadAt(prevIndexUnexpanded - 1);
+          return;
         }
         const preRowCount = this.rows.length;
         this.set(['rows', rowIndex, 'pending'], true);
@@ -616,6 +627,7 @@ class MimNav extends Polymer.Element {
 
   redisplayCurrent() {
     this.selectAt(this.selectedIndex);  // redisplay
+    this.preloadAt(this.selectedIndex + 1);
   }
 
   // Set the row item so that the corresponding image gets displayed.
@@ -634,13 +646,13 @@ class MimNav extends Polymer.Element {
     this.publishPath(row.path);
   }
 
-  // Use the next-image preload on the specified row.
-  setNextImageRow(row?: NavItem) {
+  // Preload the image on the specified row.
+  setPreImageRow(row?: NavItem) {
     if (!row || !row.path) {
-      this.nextimginfo = undefined;
+      this.preimginfo = undefined;
       return
     }
-    this.nextimginfo = {
+    this.preimginfo = {
       path: row.path,
       version: row.version,
       zoom: row.zoom,
