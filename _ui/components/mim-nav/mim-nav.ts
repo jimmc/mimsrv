@@ -58,6 +58,9 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Object, notify: true})
   imgitem: NavItem | undefined;
 
+  @Polymer.decorators.property({type: Object, notify: true})
+  nextimginfo: ImageInfo | undefined;
+
   @Polymer.decorators.property({type: Array})
   rows: NavItem[] = [];
 
@@ -345,6 +348,22 @@ class MimNav extends Polymer.Element {
     } else {
       this.setImageRow(row);
     }
+    this.selectNextAt(index + 1);
+  }
+
+  // If the given index is a valid image, use the next-image
+  // mechanism to preload it.
+  selectNextAt(index: number) {
+    if (index < 0 || index >= this.rows.length) {
+      this.setNextImageRow(undefined);
+      return;
+    }
+    const row = this.rows[index];
+    if (row.isDir) {
+      this.setNextImageRow(undefined);
+    } else {
+      this.setNextImageRow(row);
+    }
   }
 
   async selectPath(path: string) {
@@ -599,6 +618,7 @@ class MimNav extends Polymer.Element {
     this.selectAt(this.selectedIndex);  // redisplay
   }
 
+  // Set the row item so that the corresponding image gets displayed.
   setImageRow(row?: NavItem) {
     this.imgitem = row;
     if (!row || !row.path) {
@@ -612,6 +632,19 @@ class MimNav extends Polymer.Element {
       zoom: row.zoom,
     } as ImageInfo;
     this.publishPath(row.path);
+  }
+
+  // Use the next-image preload on the specified row.
+  setNextImageRow(row?: NavItem) {
+    if (!row || !row.path) {
+      this.nextimginfo = undefined;
+      return
+    }
+    this.nextimginfo = {
+      path: row.path,
+      version: row.version,
+      zoom: row.zoom,
+    } as ImageInfo;
   }
 
   showDialogHtml(html: string) {

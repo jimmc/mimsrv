@@ -14,10 +14,19 @@
         display: block;
         margin: auto;
       }
+      .zero {
+        position: absolute;
+        width: 0;
+        height: 0;
+      }
+      [hidden] {
+        display: none !important;
+      }
     </style>
     <div id="imgContainer" tabindex=0>
       <a id="imgWrapper">
         <img id="img" src="[[imgsrc]]" on-error="errorloading">
+        <img id="nextimg" class="zero" hidden$=true src="[[nextimgsrc]]">
       </a>
     </div>
   </template>

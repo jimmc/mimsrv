@@ -125,6 +125,7 @@
 	  </paper-menu-button>
         </div>
         <mim-nav id="nav" imginfo="{{imginfo}}" imgitem="{{imgitem}}"
+            nextimginfo="{{nextimginfo}}"
             logged-in="{{loggedIn}}"></mim-nav>
       </div>
       <div id="display">
@@ -134,7 +135,7 @@
         <div id="playButton" hidden$=[[!showPlayButton]] on-tap="playClicked">
         </div>
         <mim-image id="image" class="[[imgOverflowClass()]]"
-            imginfo="[[imginfo]]"></mim-image>
+            imginfo="[[imginfo]]" nextimginfo="[[nextimginfo]]"></mim-image>
         <mim-caption id="caption" hidden$=[[!showcaption]]
             imgitem="[[imgitem]]"></mim-caption>
       </div>
