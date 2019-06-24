@@ -71,6 +71,7 @@ func (h *Handler) init() {
   h.videoExts = map[string]bool {
     ".mp4": true,
     ".mpg": true,
+    ".mts": true,
   }
 }
 
@@ -263,7 +264,7 @@ func (h *Handler) transcodeVideoToCache(path string) error {
     log.Printf("Error transcoding video file %v: %v", path, err)
     return fmt.Errorf("Error transcoding video file %v: %v", path, err)
   }
-  log.Printf("Done transcoding video")
+  log.Printf("Done transcoding video file %s", transcodedFilePath)
   return nil
 }
 
@@ -275,7 +276,7 @@ func (h *Handler) VideoFilePath(path string) (string, error) {
     return "", nil;          // Not a video file
   }
   videoFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
-  if ext == ".mpg" {
+  if ext == ".mpg" || ext == ".mts" {
     transcodedFilePath := h.mp4PathInCache(path)
     if _, err := os.Stat(transcodedFilePath); os.IsNotExist(err) {
       if err := h.transcodeVideoToCache(path); err != nil {
