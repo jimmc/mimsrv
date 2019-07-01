@@ -149,7 +149,11 @@ class MimNav extends Polymer.Element {
       this.loggedIn = true;
       this.handleListResponse(dir, response);
     } catch (e) {
-      this.loggedIn = false;
+      if (e.status == 401 /*Unauthorized*/ || e.status == 403 /*Forbidden*/) {
+        this.loggedIn = false;
+      } else {
+        alert('Error loading ' + dir + ': ' + e.responseText)
+      }
       console.log("Query failed:", e);
     }
   }
