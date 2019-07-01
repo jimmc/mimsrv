@@ -3,6 +3,7 @@
 // ListItem is what we get back from the API list call.
 interface ListItem {
   Name: string;
+  Path: string;
   IsDir: boolean;
   Size: number;
   Type: string;
@@ -166,13 +167,13 @@ class MimNav extends Polymer.Element {
 
   listToNav(listItem: ListItem, dir: string): NavItem {
     const level = dir.split('/').length;
-    const path = dir + '/' + listItem.Name;
+    const path = listItem.Path || dir + '/' + listItem.Name;
     return {
       path,
       name: listItem.Name,
       level,
       expanded: false,
-      isDir: listItem.IsDir,
+      isDir: listItem.IsDir || listItem.Type == 'index',
       size: listItem.Size,
       type: listItem.Type,
       modTime: listItem.ModTime,
@@ -295,6 +296,9 @@ class MimNav extends Polymer.Element {
     let classList = ['nav-item'];
     if (row.isDir) {
       classList.push('dir');
+    }
+    if (row.type == 'index') {
+      classList.push('indexfile');
     }
     const rowIndex = this.rows.indexOf(row);
     if (rowIndex >= 0) {

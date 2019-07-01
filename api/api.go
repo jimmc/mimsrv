@@ -42,7 +42,14 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  result, err, status := h.config.ContentHandler.List(path)
+  var result *content.ListResult
+  var err error
+  var status int
+  if strings.HasSuffix(path, ".mpr") {
+    result, err, status = h.config.ContentHandler.ListFromIndex(path)
+  } else {
+    result, err, status = h.config.ContentHandler.List(path)
+  }
   if err != nil {
     http.Error(w, err.Error(), status)
     return

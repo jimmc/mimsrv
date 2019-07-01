@@ -6,6 +6,7 @@ import (
   "log"
   "net/http"
   "os"
+  "path"
   "path/filepath"
   "strings"
 )
@@ -20,6 +21,7 @@ type UpdateCommand struct {
 type ImageIndex struct {
   indexName string
   entries map[string]*imageEntry
+  filenames []string    // Filenames in the order listed in the file.
 }
 
 type imageEntry struct {
@@ -162,22 +164,32 @@ func findEntry(lines []string, item string) (int, *imageEntry) {
  */
 func (h *Handler) imageIndex(dir string) *ImageIndex {
   indexName := "index.mpr"
-  indexPath := fmt.Sprintf("%s/%s", dir, indexName)
+  return h.loadIndexFile(dir, indexName)
+}
+
+/* Reads the image index in the specified file, or nil
+ * if not found.
+ */
+func (h *Handler) loadIndexFile(dirPath, indexName string) *ImageIndex {
+  indexPath := fmt.Sprintf("%s/%s", dirPath, indexName)
   indexLines, err := readFileLines(indexPath)
   if err != nil {
     return nil
   }
 
   entries := make(map[string]*imageEntry)
+  filenames := make([]string, 0)
   for i := range indexLines {
     if indexLines[i] != "" {
       entry := entryFromLine(indexLines[i])
       entries[entry.filename] = entry
+      filenames = append(filenames, entry.filename)
     }
   }
   return &ImageIndex{
     indexName: indexName,
     entries: entries,
+    filenames: filenames,
   }
 }
 
@@ -251,6 +263,22 @@ func (i *ImageIndex) filter(files []os.FileInfo) []os.FileInfo {
     }
   }
   return filteredFiles
+}
+
+/** dirSet returns the set of directories that are referenced by all
+ * of the entries in the ImageIndex.
+ */
+func (i *ImageIndex) dirSet() map[string]struct{} {
+  s := make(map[string]struct{}, 0)
+  for _, fn := range i.filenames {
+    dir := path.Dir(fn)
+    x, ok := s[dir]
+    if !ok {
+      x = struct{}{}
+    }
+    s[dir] = x
+  }
+  return s
 }
 
 /* Returns an integer multiple of 90 representing the rotation of the

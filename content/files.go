@@ -11,6 +11,7 @@ import (
   "net/http"
   "os"
   "os/exec"
+  "path"
   "path/filepath"
   "strings"
   "time"
@@ -36,6 +37,7 @@ type Handler struct {
 
 type ListItem struct {
   Name string
+  Path string           // Full API path if the item is not in the parent dir
   IsDir bool
   Size int64
   Type string
@@ -53,6 +55,12 @@ type ListResult struct {
 
 type UpdateTextCommand struct {
   Content string
+}
+
+// dirInfo stores info loaded from one directory.
+type dirInfo struct {
+  loc *time.Location    // info from TZ file
+  flags dirFlags  // flags from summary.txt file
 }
 
 func NewHandler(c *Config) Handler {
@@ -91,6 +99,79 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
     files = imageIndex.filter(files)
   }
 
+  loc := readTzFile(dirPath)
+  flags := loadDirFlags(dirPath)
+
+  result := h.mapFileInfosToListResult(files, dirPath, loc, flags.ignoreFileTimes)
+  result.UnfilteredFileCount = unfilteredFileCount
+  if imageIndex != nil {
+    result.IndexName = imageIndex.indexName
+  }
+  return result, nil, 0
+}
+
+// ListFromIndex creates a list of files as given in the specified index file.
+func (h *Handler) ListFromIndex(indexApiPath string) (*ListResult, error, int) {
+  contentRoot := strings.TrimSuffix(h.config.ContentRoot, "/")
+  indexApiPath = strings.TrimSuffix(indexApiPath, "/")
+  indexApiDir := path.Dir(indexApiPath)
+  indexPath := fmt.Sprintf("%s/%s", contentRoot, indexApiPath)
+  indexName := path.Base(indexPath)
+  dirPath := path.Dir(indexPath)
+  imageIndex := h.loadIndexFile(dirPath, indexName)
+  if imageIndex == nil {
+    return nil, fmt.Errorf("Failed to load index file %s", indexApiPath), http.StatusBadRequest
+  }
+
+  dirSet := imageIndex.dirSet() // The directories as they appear in the index file entries.
+  dirPaths := validDirsFromSet(contentRoot, dirPath, dirSet)  // Resolved and validated.
+
+  dirInfos := make(map[string]dirInfo, len(dirPaths))
+  for dirPath, _ := range dirPaths {
+    di := dirInfo{}
+    di.loc = readTzFile(dirPath)
+    di.flags = loadDirFlags(dirPath)
+    dirInfos[dirPath] = di
+  }
+
+  n := len(imageIndex.filenames)
+  list := make([]ListItem, n, n)
+  for i, fn := range imageIndex.filenames {
+    d := path.Dir(fn)
+    dir := path.Join(dirPath, d)
+    base := path.Base(fn)
+    dirInfo, ok := dirInfos[dir]
+    if ok {
+      realfn := path.Join(dir, base)
+      f, err := os.Stat(realfn)
+      if err != nil {
+        return nil, fmt.Errorf("Error reading file info for %s", fn), http.StatusInternalServerError
+      }
+      h.mapFileInfoToListItem(f, &list[i], dir, dirInfo.loc, dirInfo.flags.ignoreFileTimes)
+      list[i].Path = path.Join("/", indexApiDir, fn)
+    }
+  }
+  return &ListResult{
+    Items: list,
+  }, nil, 0
+}
+
+// validDirsFromSet takes a set of relative directories and returns
+// the equivalent set of directories resolved against dirPath, removing
+// any that are not withing contentRoot.
+func validDirsFromSet(contentRoot, dirPath string, dirSet map[string]struct{}) map[string]struct{} {
+  contentRoot = path.Clean(contentRoot)
+  dirPaths := make(map[string]struct{}, 0)
+  for d, _ := range dirSet {
+    dir := path.Join(dirPath, d)
+    if strings.HasPrefix(dir, contentRoot) {
+      dirPaths[dir] = struct{}{}
+    }
+  }
+  return dirPaths
+}
+
+func readTzFile(dirPath string) *time.Location {
   var loc *time.Location
   tzpath := fmt.Sprintf("%s/TZ", dirPath)
   linkdest, err := os.Readlink(tzpath)
@@ -105,15 +186,7 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
       log.Printf("Error loading timezone file %s: %v", tzpath, err)
     }
   }
-
-  flags := loadDirFlags(dirPath)
-
-  result := h.mapFileInfosToListResult(files, dirPath, loc, flags.ignoreFileTimes)
-  result.UnfilteredFileCount = unfilteredFileCount
-  if imageIndex != nil {
-    result.IndexName = imageIndex.indexName
-  }
-  return result, nil, 0
+  return loc
 }
 
 func (h *Handler) mapFileInfosToListResult(files []os.FileInfo, parentPath string,
@@ -138,6 +211,8 @@ func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPat
     item.Type = "image"
   } else if h.videoExts[ext] {
     item.Type = "video"
+  } else if ext == ".mpr" {
+    item.Type = "index"
   }
   if !ignoreFileTimes {
     t := f.ModTime()

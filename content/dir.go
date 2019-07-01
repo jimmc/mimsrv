@@ -56,7 +56,7 @@ func (h *Handler) keepFileInList(dirPath string, f os.FileInfo) bool {
     return true;
   }
   ext := strings.ToLower(filepath.Ext(f.Name()))
-  if h.imageExts[ext] || h.videoExts[ext] {
+  if h.imageExts[ext] || h.videoExts[ext] || ext == ".mpr" {
     return true;
   }
   return false;
