@@ -21,6 +21,7 @@ func TestUpdateImageIndex(t *testing.T) {
   bakFilename := testIndexFilename + "~"
   golden0Filename := "testdata/index0-golden.mpr"
   goldenFilename := "testdata/index1-golden.mpr"
+  golden2Filename := "testdata/index2-golden.mpr"
 
   os.RemoveAll(testTmpDir)
   err := os.Mkdir(testTmpDir, 0744)
@@ -75,6 +76,15 @@ func TestUpdateImageIndex(t *testing.T) {
   })
   if err == nil {
     t.Errorf("updating non-existant index without autocreate should fail")
+  }
+  err, _ = h.updateImageIndexItem(testTmpDir + "/foo.mpr", UpdateCommand{
+    Item: "i",
+    Action: "deltarotation",
+    Value: "+r",
+    Autocreate: true,
+  })
+  if err == nil {
+    t.Errorf("updating custom index with autocreate should fail")
   }
 
   f, err := os.Create(testTmpDir + "/img001.jpg")
@@ -132,6 +142,25 @@ func TestUpdateImageIndex(t *testing.T) {
   }
   // Make sure the file we created is correct
   err = compareFiles(testIndexFilename, goldenFilename)
+  if err != nil {
+    t.Error(err.Error())
+  }
+
+  err, _ = h.updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "nosuchimage.jpg",
+    Action: "drop",
+  })
+  if err == nil {
+    t.Errorf("drop non-existing image should fail")
+  }
+  err, _ = h.updateImageIndexItem(testIndexFilename, UpdateCommand{
+    Item: "img001.jpg",
+    Action: "drop",
+  })
+  if err != nil {
+    t.Errorf("Error dropping file img001.jpg: %v", err)
+  }
+  err = compareFiles(testIndexFilename, golden2Filename)
   if err != nil {
     t.Error(err.Error())
   }

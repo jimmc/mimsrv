@@ -607,6 +607,43 @@ class MimNav extends Polymer.Element {
         this.dtFromFlags(text) || this.rows[index].modTimeStr);
   }
 
+  async dropCurrent() {
+    if (this.selectedIndex < 0) {
+      console.log("No image selected")
+      return
+    }
+    const row = this.rows[this.selectedIndex];
+    if (row.isDir) {
+      console.log("Can't drop a directory")
+      return
+    }
+    const lastSlash = row.path.lastIndexOf('/')
+    const dir = row.path.substr(0, lastSlash)
+    const indexFile = dir + "/index.mpr"        // TODO - don't hardwire this
+    try {
+      const indexUrl = "/api/index" + indexFile;
+      const formData = new FormData();
+      formData.append("item", row.name);
+      formData.append("action", "drop");
+      formData.append("autocreate", "true");
+      const options = {
+        method: "POST",
+        params: formData,
+      };
+      const response = await ApiManager.xhrJson(indexUrl, options);
+      // After success from the server, drop the row from our index also.
+      this.splice('rows', this.selectedIndex, 1);
+      // We don't change this.selectedIndex, so we will display the next row,
+      // unless we are at the end, in which case we back up by one.
+      if (this.selectedIndex >= this.rows.length) {
+        this.selectedIndex = this.selectedIndex - 1;
+      }
+      this.redisplayCurrent();
+    } catch (e) {
+      console.error("drop failed:", e)
+    }
+  }
+
   async rotateCurrent(value: string) {
     if (this.selectedIndex < 0) {
       console.log("No image selected")

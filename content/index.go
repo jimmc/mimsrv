@@ -41,26 +41,28 @@ func (h *Handler) UpdateImageIndex(apiPath string, command UpdateCommand) (error
 
 func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) (error, int) {
   if filepath.Ext(indexPath) != indexExtension {
-    return fmt.Errorf("Index operations can only apply to %s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
-  }
-  if filepath.Base(indexPath) != "index.mpr" {
-    return fmt.Errorf("Index operations can only apply to index.mpr files"), http.StatusBadRequest
+    return fmt.Errorf("index operations can only apply to %s files, not to %s", indexExtension, indexPath), http.StatusBadRequest
   }
   if command.Action == "" {
-    return fmt.Errorf("No action specified"), http.StatusBadRequest
+    return fmt.Errorf("no action specified"), http.StatusBadRequest
   }
-  if command.Action != "deltarotation" {
-    return fmt.Errorf("Action %s is not valid", command.Action), http.StatusBadRequest
+  if command.Action != "deltarotation" && command.Action != "drop" {
+    return fmt.Errorf("action %s is not valid", command.Action), http.StatusBadRequest
   }
   if command.Item == "" {
-    return fmt.Errorf("No item specified"), http.StatusBadRequest
+    return fmt.Errorf("no item specified"), http.StatusBadRequest
   }
-  if command.Value == "" {
-    return fmt.Errorf("No value specified"), http.StatusBadRequest
+  if command.Value == "" && command.Action != "drop" {
+    return fmt.Errorf("value is required for %s action", command.Action), http.StatusBadRequest
   }
 
   lines, err := readFileLines(indexPath)
   if os.IsNotExist(err) && command.Autocreate {
+    // We only allow auto-creation of the standard index.mpr file.
+    // Custom index files must be manually created directly in the filesystem.
+    if filepath.Base(indexPath) != "index.mpr" {
+      return fmt.Errorf("index file %s does not exist and can not be autocreated", indexPath), http.StatusBadRequest
+    }
     log.Printf("Index file %s does not exist, autocreating it now", indexPath)
     var status int      // We want to reuse err
     err, status = h.autoCreateIndexFile(indexPath)
@@ -79,9 +81,10 @@ func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) 
 
   itemIndex, entry := findEntry(lines, command.Item)
   if itemIndex < 0 {
-    return fmt.Errorf("Item %s not found in index", command.Item), http.StatusBadRequest
+    return fmt.Errorf("item %s not found in index", command.Item), http.StatusBadRequest
   }
-  if command.Action == "deltarotation" {
+  switch command.Action {
+  case "deltarotation":
     entry.rotation, err = combineRotations(entry.rotation, command.Value)
     if err != nil {
       return err, http.StatusBadRequest
@@ -92,8 +95,15 @@ func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) 
       return err, http.StatusInternalServerError
     }
     return nil, http.StatusOK
+  case "drop":
+    // Remove the specified item from the index list for this file.
+    updatedLines := append(lines[0:itemIndex:itemIndex], lines[itemIndex+1:]...)
+    err = backupAndWriteFileLines(indexPath, updatedLines)
+    if err != nil {
+      return err, http.StatusInternalServerError
+    }
+    return nil, http.StatusOK
   }
-  // Add other actions here when defined.
 
   return nil, http.StatusNotImplemented
 }
@@ -123,10 +133,10 @@ func (h *Handler) autoCreateIndexFile(indexPath string) (error, int) {
 
 func combineRotations(fileRotation, deltaRotation string) (string, error) {
   if fileRotation != "" && fileRotation != "+r" && fileRotation != "+rr" && fileRotation != "-r" {
-    return "", fmt.Errorf("Rotation %s in file is not valid", fileRotation)
+    return "", fmt.Errorf("rotation %s in file is not valid", fileRotation)
   }
   if deltaRotation != "" && deltaRotation != "+r" && deltaRotation != "+rr" && deltaRotation != "-r" {
-    return "", fmt.Errorf("Rotation %s in file is not valid", deltaRotation)
+    return "", fmt.Errorf("rotation %s in file is not valid", deltaRotation)
   }
   switch fileRotation + deltaRotation {
     case "": return "", nil

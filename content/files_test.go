@@ -53,7 +53,7 @@ func TestListWithIndex(t *testing.T) {
   if err != nil {
     t.Fatalf("failed to list test directory with-index")
   }
-  if got, want := list.UnfilteredFileCount, 7; got != want {
+  if got, want := list.UnfilteredFileCount, 8; got != want {
     t.Errorf("list with-index unfiltered item count: got %d, want %d", got, want)
   }
   if got, want := len(list.Items), 5; got != want {

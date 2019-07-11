@@ -117,6 +117,14 @@ class MimviewApp extends Polymer.Element {
     this.$.mimlogin.checkStatus();
   }
 
+  dropCurrent() {
+    if (!this.$.mimlogin.hasPermission('edit')) {
+      this.showTextDialog('You do not have permission to edit');
+      return
+    }
+    this.$.nav.dropCurrent();
+  }
+
   async putText(textFile: string, content: string) {
     try {
       const putTextUrl = "/api/text" + textFile;
@@ -220,6 +228,8 @@ class MimviewApp extends Polymer.Element {
         this.showKeyBindings.bind(this));
     this.addKey('c', 'Toggle caption',
         () => this.toggleAllowCaption());
+    this.addKey('d', 'Drop image from index',
+        () => this.dropCurrent());
     this.addKey('e', 'Edit the image description',
         () => this.editImageDescription());
     this.addKey('E', 'Edit the folder description',
