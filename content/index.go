@@ -97,6 +97,7 @@ func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) 
     return nil, http.StatusOK
   case "drop":
     // Remove the specified item from the index list for this file.
+    log.Printf("Removing from index file %q line %d: %s\n", indexPath, itemIndex, lines[itemIndex])
     updatedLines := append(lines[0:itemIndex:itemIndex], lines[itemIndex+1:]...)
     err = backupAndWriteFileLines(indexPath, updatedLines)
     if err != nil {

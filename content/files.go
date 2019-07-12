@@ -38,6 +38,8 @@ type Handler struct {
 type ListItem struct {
   Name string
   Path string           // Full API path if the item is not in the parent dir
+  IndexPath string      // Full API path to the index file, if not the default index
+  IndexEntry string     // The path to the file relative to the index, if not in the default index
   IsDir bool
   Size int64
   Type string
@@ -149,6 +151,8 @@ func (h *Handler) ListFromIndex(indexApiPath string) (*ListResult, error, int) {
       }
       h.mapFileInfoToListItem(f, &list[i], dir, dirInfo.loc, dirInfo.flags.ignoreFileTimes)
       list[i].Path = path.Join("/", indexApiDir, fn)
+      list[i].IndexPath = indexApiPath
+      list[i].IndexEntry = fn
     }
   }
   return &ListResult{

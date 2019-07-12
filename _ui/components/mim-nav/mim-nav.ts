@@ -4,6 +4,8 @@
 interface ListItem {
   Name: string;
   Path: string;
+  IndexPath: string;
+  IndexEntry: string;
   IsDir: boolean;
   Size: number;
   Type: string;
@@ -23,6 +25,8 @@ interface ListResponse {
 interface NavItem {
   path: string;         // Full path to the this item
   name: string;         // Final component of the path
+  indexPath: string;    // API path to index containing this item, if not default index
+  indexEntry: string;   // Path to file relative to index, if not default index
   level: number;
   expanded: boolean;
   pending: boolean;
@@ -171,6 +175,8 @@ class MimNav extends Polymer.Element {
     return {
       path,
       name: listItem.Name,
+      indexPath: listItem.IndexPath,
+      indexEntry: listItem.IndexEntry,
       level,
       expanded: false,
       isDir: listItem.IsDir || listItem.Type == 'index',
@@ -617,13 +623,20 @@ class MimNav extends Polymer.Element {
       console.log("Can't drop a directory")
       return
     }
-    const lastSlash = row.path.lastIndexOf('/')
-    const dir = row.path.substr(0, lastSlash)
-    const indexFile = dir + "/index.mpr"        // TODO - don't hardwire this
+    let indexFile = ''
+    if (row.indexPath) {
+      // Custom index file
+      indexFile = "/" + row.indexPath
+    } else {
+      // Default index file
+      const lastSlash = row.path.lastIndexOf('/')
+      const dir = row.path.substr(0, lastSlash)
+      indexFile = dir + "/index.mpr"
+    }
     try {
       const indexUrl = "/api/index" + indexFile;
       const formData = new FormData();
-      formData.append("item", row.name);
+      formData.append("item", row.indexEntry || row.name);
       formData.append("action", "drop");
       formData.append("autocreate", "true");
       const options = {
@@ -654,13 +667,20 @@ class MimNav extends Polymer.Element {
       console.log("Can't rotate a directory")
       return
     }
-    const lastSlash = row.path.lastIndexOf('/')
-    const dir = row.path.substr(0, lastSlash)
-    const indexFile = dir + "/index.mpr"
+    let indexFile = ''
+    if (row.indexPath) {
+      // Custom index file
+      indexFile = "/" + row.indexPath
+    } else {
+      // Default index file
+      const lastSlash = row.path.lastIndexOf('/')
+      const dir = row.path.substr(0, lastSlash)
+      indexFile = dir + "/index.mpr"
+    }
     try {
       const indexUrl = "/api/index" + indexFile;
       const formData = new FormData();
-      formData.append("item", row.name);
+      formData.append("item", row.indexEntry || row.name);
       formData.append("action", "deltarotation");
       formData.append("value", value)
       formData.append("autocreate", "true");
