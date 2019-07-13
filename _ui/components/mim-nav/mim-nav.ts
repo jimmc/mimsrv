@@ -667,20 +667,15 @@ class MimNav extends Polymer.Element {
       console.log("Can't rotate a directory")
       return
     }
-    let indexFile = ''
-    if (row.indexPath) {
-      // Custom index file
-      indexFile = "/" + row.indexPath
-    } else {
-      // Default index file
-      const lastSlash = row.path.lastIndexOf('/')
-      const dir = row.path.substr(0, lastSlash)
-      indexFile = dir + "/index.mpr"
-    }
+    const lastSlash = row.path.lastIndexOf('/')
+    const dir = row.path.substr(0, lastSlash)
+    // We always do the rotations in the default index, because the
+    // server always looks in the default index.
+    const indexFile = dir + "/index.mpr"
     try {
       const indexUrl = "/api/index" + indexFile;
       const formData = new FormData();
-      formData.append("item", row.indexEntry || row.name);
+      formData.append("item", row.name);
       formData.append("action", "deltarotation");
       formData.append("value", value)
       formData.append("autocreate", "true");
@@ -690,9 +685,29 @@ class MimNav extends Polymer.Element {
       };
       const response = await ApiManager.xhrJson(indexUrl, options);
       row.version = row.version + 1;
+      // If there are any custom indexes, there may be other places in
+      // the currently displayed list that reference the same image, so
+      // make sure we update the version number there also.
+      this.updateImageAliases(this.selectedIndex);
       this.redisplayCurrent();
     } catch (e) {
       console.error("rotation failed:", e)
+    }
+  }
+
+  // We want to keep the version numbers of aliases images in sync,
+  // so that when we change one (in particular, rotation) and then
+  // look at the other, we will see that change there as well.
+  updateImageAliases(index: number) {
+    const row = this.rows[this.selectedIndex];
+    // Look for the same row.path in other entries.
+    for (let i = 0; i < this.rows.length; i++) {
+      if (i == this.selectedIndex) {
+        continue;
+      }
+      if (this.rows[i].path == row.path) {
+        this.rows[i].version = row.version;
+      }
     }
   }
 
@@ -703,6 +718,7 @@ class MimNav extends Polymer.Element {
     const row = this.rows[this.selectedIndex];
     row.zoom = !row.zoom;
     row.version = row.version + 1;
+    this.updateImageAliases(this.selectedIndex);  // Keep version numbers of aliases in sync.
     this.redisplayCurrent();
   }
 
