@@ -136,13 +136,13 @@ class MimNav extends Polymer.Element {
     return null;
   }
 
-  publishPath(path: string) {
-    this.publishChannel.postMessage(path);
+  publishLocation(loc: string) {
+    this.publishChannel.postMessage(loc);
   }
 
   receiveBroadcast(b: MessageEvent) {
     const data: string = b.data;
-    this.selectPath(data);
+    this.selectLocation(data);
   }
 
   // Returns the delta count for this.rows
@@ -408,19 +408,19 @@ class MimNav extends Polymer.Element {
     }
   }
 
-  async selectPath(path: string) {
+  async selectLocation(loc: string) {
     if (this.selectedIndex >= 0) {
       const row = this.rows[this.selectedIndex];
-      if (row.path === path) {
+      if (this.rowMatchesLocation(row, loc)) {
         // Already selected, do nothing
         return
       }
     }
-    if (!path) {
+    if (!loc) {
       this.selectAt(-1);        // Deselect
       return;
     }
-    await this.openPath(path);
+    await this.openPath(loc);
   }
 
   async openPath(path: string) {
@@ -768,7 +768,7 @@ class MimNav extends Polymer.Element {
     this.imgitem = row;
     if (!row || !row.path) {
       this.imginfo = undefined;
-      this.publishPath('');
+      this.publishLocation('');
       return
     }
     this.imginfo = {
@@ -776,7 +776,11 @@ class MimNav extends Polymer.Element {
       version: row.version,
       zoom: row.zoom,
     } as ImageInfo;
-    this.publishPath(row.path);
+    let loc = row.path;
+    if (row.indexPath) {
+      loc = '/' + row.indexPath + '/' + row.indexEntry;
+    }
+    this.publishLocation(loc);
   }
 
   // Preload the image on the specified row.
