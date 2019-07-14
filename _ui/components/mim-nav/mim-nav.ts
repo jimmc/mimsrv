@@ -245,7 +245,7 @@ class MimNav extends Polymer.Element {
       console.log("No requestedLocation");
       return;           // No requested location, so no need to check anything here.
     }
-    const index = this.rows.findIndex((row) => row.path == this.requestedLocation);
+    const index = this.rows.findIndex((row) => this.rowMatchesLocation(row, this.requestedLocation));
     if (index >= 0) {
       console.log("Found requestedLocation in current rows");
       this.openPath(this.requestedLocation);
@@ -268,6 +268,14 @@ class MimNav extends Polymer.Element {
     const nextDir = dir + '/' + locParts[dirParts.length];
     console.log("nextDir:", nextDir);
     this.queryApiList(nextDir);
+  }
+
+  // Returns true of the given row matches the requested location.
+  rowMatchesLocation(row: NavItem, location: string) {
+    if (row.indexPath) {
+      return ('/' + row.indexPath + '/' + row.indexEntry) == location;
+    }
+    return row.path == location;
   }
 
   // Looks at the level of the row at the specified index and returns the
@@ -363,7 +371,11 @@ class MimNav extends Polymer.Element {
     this.selectedIndex = index;
     this.scrollRowIntoView(index);
     const row = this.rows[index];
-    this.set(['route', '__queryParams', 'loc'], row.path);
+    let path = row.path;
+    if (row.indexPath) {
+      path = '/' + row.indexPath + '/' + row.indexEntry;
+    }
+    this.set(['route', '__queryParams', 'loc'], path);
     if (row.isDir) {
       this.setImageRow(undefined);
     } else {
@@ -418,7 +430,7 @@ class MimNav extends Polymer.Element {
     }
     const parentPath = path.substr(0, x);
     await this.openPath(parentPath);
-    const index = this.rows.findIndex((row) => row.path == path);
+    const index = this.rows.findIndex((row) => this.rowMatchesLocation(row, path));
     if (index < 0) {
       console.log("path not found:", path);
       return;
@@ -598,6 +610,8 @@ class MimNav extends Polymer.Element {
   }
 
   updateText(itemPath: string, textPath: string, text: string) {
+    // Text updates are done directly on the image location and its text file,
+    // so we compare row.path directly instead of using this.rowMatchesLocation.
     const index = this.rows.findIndex((row) => row.path == itemPath);
     if (index < 0) {
       console.error("Can't find entry for item", itemPath);
@@ -605,12 +619,21 @@ class MimNav extends Polymer.Element {
     }
     this.set(["rows", index, "text"], text);
     this.set(["rows", index, "textWithoutFlags"], this.stripFlags(text));
+    if (index == this.selectedIndex) {
+      // Propagate to imgitem to update the caption right away.
+      if (this.imgitem && this.imgitem.text == text) {
+        this.notifyPath("imgitem.text", text);
+      } else {
+        this.set(["imgitem", "text"], text);
+      }
+    }
     // If we overrode the modTimeStr from the server with a dt string
     // from the image text file, we lost that server-provided info.
     // If we don't have the dt string any more, we have nothing else,
     // so we just leave it there.
     this.set(["rows", index, "modTimeStr"],
         this.dtFromFlags(text) || this.rows[index].modTimeStr);
+    this.updateImageAliases(index);
   }
 
   async dropCurrent() {
@@ -695,18 +718,31 @@ class MimNav extends Polymer.Element {
     }
   }
 
-  // We want to keep the version numbers of aliases images in sync,
+  // We want to keep the version numbers and texts of aliases images in sync,
   // so that when we change one (in particular, rotation) and then
   // look at the other, we will see that change there as well.
   updateImageAliases(index: number) {
-    const row = this.rows[this.selectedIndex];
+    const row = this.rows[index];
     // Look for the same row.path in other entries.
     for (let i = 0; i < this.rows.length; i++) {
-      if (i == this.selectedIndex) {
+      if (i == index) {
         continue;
       }
+      // We specifically match on path here rather than calling
+      // this.rowMatchesLocation, because we are looking for aliases.
       if (this.rows[i].path == row.path) {
         this.rows[i].version = row.version;
+        // When updating text, we want to propagate the change to the ui.
+        this.set(["rows", i, "text"], row.text)
+        this.set(["rows", i, "textWithoutFlags"], row.textWithoutFlags);
+        if (i == this.selectedIndex) {
+          // Propagate to imgitem to update the caption right away.
+          if (this.imgitem && this.imgitem.text == row.text) {
+            this.notifyPath("imgitem.text", row.text);
+          } else {
+            this.set(["imgitem", "text"], row.text);
+          }
+        }
       }
     }
   }
