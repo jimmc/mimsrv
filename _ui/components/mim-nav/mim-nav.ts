@@ -81,7 +81,8 @@ class MimNav extends Polymer.Element {
   publishChannel: BroadcastChannel;
   subscribeChannel: BroadcastChannel;
   requestedLocation: string;
-  preloadCount = 4;
+  preloadDirectCount = 1;       // Preload this many images when we direct-access an image.
+  preloadMovingCount = 3;       // Preload this many images when we are moving through a list.
 
   ready() {
     super.ready();
@@ -367,12 +368,14 @@ class MimNav extends Polymer.Element {
       return;
     }
     this.selectAt(e.model.index);
-    this.preloadN(e.model.index, this.preloadCount, 1);
+    this.preloadN(e.model.index, this.preloadDirectCount, 1);
+    this.preloadN(e.model.index, this.preloadDirectCount, -1);
   }
 
   rowToggled(e: any) {
     this.selectAt(e.model.index);
-    this.preloadN(e.model.index, this.preloadCount, 1);
+    this.preloadN(e.model.index, this.preloadDirectCount, 1);
+    this.preloadN(e.model.index, this.preloadDirectCount, -1);
     this.toggleCurrent();
   }
 
@@ -455,8 +458,17 @@ class MimNav extends Polymer.Element {
         await this.toggleAt(index);     // expand the folder
       }
     } else {
+      const oldIndex = this.selectedIndex;
       this.selectAt(index);     // Select the image
-      this.preloadN(index, this.preloadCount, 1);
+      // If we notice we are moving, preload a few more images.
+      if (index == oldIndex + 1) {
+        this.preloadN(index, this.preloadMovingCount, 1);
+      } else if (index == oldIndex - 1) {
+        this.preloadN(index, this.preloadMovingCount, -1);
+      } else {
+        this.preloadN(index, this.preloadDirectCount, 1);
+        this.preloadN(index, this.preloadDirectCount, -1);
+      }
     }
   }
 
@@ -508,7 +520,7 @@ class MimNav extends Polymer.Element {
         this.scrollRowIntoView(this.selectedIndex + 2);
         this.selectAt(this.selectedIndex + 1);
         // selectAt updates selectedIndex
-        this.preloadN(this.selectedIndex, this.preloadCount, 1);
+        this.preloadN(this.selectedIndex, this.preloadMovingCount, 1);
       }
     }
   }
@@ -526,7 +538,7 @@ class MimNav extends Polymer.Element {
       } else {
         this.scrollRowIntoView(this.selectedIndex + 1);
         this.selectAt(this.selectedIndex);
-        this.preloadN(this.selectedIndex, this.preloadCount, 1);
+        this.preloadN(this.selectedIndex, this.preloadMovingCount, 1);
       }
     }
   }
@@ -541,7 +553,7 @@ class MimNav extends Polymer.Element {
         this.scrollRowIntoView(this.selectedIndex - 2);
         this.selectAt(this.selectedIndex - 1);
         // selectAt updates this.selectedIndex
-        this.preloadN(this.selectedIndex, this.preloadCount, -1);
+        this.preloadN(this.selectedIndex, this.preloadMovingCount, -1);
       }
     }
   }
@@ -555,7 +567,7 @@ class MimNav extends Polymer.Element {
         this.scrollRowIntoView(this.selectedIndex - 2);
         this.selectAt(this.selectedIndex - 1);
         // selectAt updates this.selectedIndex
-        this.preloadN(this.selectedIndex, this.preloadCount, -1);
+        this.preloadN(this.selectedIndex, this.preloadMovingCount, -1);
         return;
       }
       this.setImageRow(undefined);
@@ -567,7 +579,7 @@ class MimNav extends Polymer.Element {
           this.scrollRowIntoView(prevIndexUnexpanded + 1);
           this.scrollRowIntoView(prevIndexUnexpanded - 1);
           this.selectAt(prevIndexUnexpanded);
-          this.preloadN(prevIndexUnexpanded, this.preloadCount, -1);
+          this.preloadN(prevIndexUnexpanded, this.preloadMovingCount, -1);
           return;
         }
         const preRowCount = this.rows.length;
@@ -774,7 +786,8 @@ class MimNav extends Polymer.Element {
 
   redisplayCurrent() {
     this.selectAt(this.selectedIndex);  // redisplay
-    this.preloadN(this.selectedIndex, this.preloadCount, 1);
+    this.preloadN(this.selectedIndex, this.preloadDirectCount, 1);
+    this.preloadN(this.selectedIndex, this.preloadDirectCount, -1);
   }
 
   // Set the row item so that the corresponding image gets displayed.
