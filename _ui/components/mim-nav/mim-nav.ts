@@ -107,7 +107,14 @@ class MimNav extends Polymer.Element {
   }
 
   setupChannels() {
-    this.publishChannel = this.createNamedChannel('publish')
+    // We want to publish if we are not subscribing, or if
+    // we are subscribing and are publishing to a different channel.
+    const pubChan = this.getQueryParm('publish');
+    const subChan = this.getQueryParm('subscribe');
+    const shouldPublish = subChan == null || (pubChan !== null && subChan != pubChan);
+    if (shouldPublish) {
+      this.publishChannel = this.createNamedChannel('publish')
+    }
     if (this.getQueryParm('subscribe') !== null) {
       this.subscribeChannel = this.createNamedChannel('subscribe')
       this.subscribeChannel.onmessage = (b) => this.receiveBroadcast(b)
@@ -137,7 +144,9 @@ class MimNav extends Polymer.Element {
   }
 
   publishLocation(loc: string) {
-    this.publishChannel.postMessage(loc);
+    if (this.publishChannel) {
+      this.publishChannel.postMessage(loc);
+    }
   }
 
   receiveBroadcast(b: MessageEvent) {
@@ -147,7 +156,7 @@ class MimNav extends Polymer.Element {
 
   // Returns the delta count for this.rows
   async queryApiList(dir: string) {
-    console.log("queryApiList:", dir);
+    // console.log("queryApiList:", dir);
     try {
       const listUrl = "/api/list/" + dir;
       const response = await ApiManager.xhrJson(listUrl);
@@ -242,22 +251,22 @@ class MimNav extends Polymer.Element {
   // still need to descend down that path.
   handleRequestedLocation(dir: string) {
     if (!this.requestedLocation) {
-      console.log("No requestedLocation");
+      // console.log("No requestedLocation");
       return;           // No requested location, so no need to check anything here.
     }
     const index = this.rows.findIndex((row) => this.rowMatchesLocation(row, this.requestedLocation));
     if (index >= 0) {
-      console.log("Found requestedLocation in current rows");
+      // console.log("Found requestedLocation in current rows");
       this.openPath(this.requestedLocation);
       this.requestedLocation = '';
       return;
     }
     if (dir == this.requestedLocation) {
-      console.log("Made it to requestedLocation");
+      // console.log("Made it to requestedLocation");
       this.requestedLocation = '';
       return;           // We made it to the requested location
     }
-    console.log("At ", dir, ", still need to get to requestedLocation ", this.requestedLocation);
+    // console.log("At ", dir, ", still need to get to requestedLocation ", this.requestedLocation);
     const dirParts = dir.split('/');
     const locParts = this.requestedLocation.split('/');
     if (dirParts.length >= locParts.length) {
@@ -266,7 +275,7 @@ class MimNav extends Polymer.Element {
       return;
     }
     const nextDir = dir + '/' + locParts[dirParts.length];
-    console.log("nextDir:", nextDir);
+    // console.log("nextDir:", nextDir);
     this.queryApiList(nextDir);
   }
 
@@ -369,6 +378,11 @@ class MimNav extends Polymer.Element {
 
   selectAt(index: number) {
     this.selectedIndex = index;
+    if (index < 0) {
+      this.set(['route', '__queryParams', 'loc'], '');
+      // this.setImageRow(undefined);
+      return;
+    }
     this.scrollRowIntoView(index);
     const row = this.rows[index];
     let path = row.path;
