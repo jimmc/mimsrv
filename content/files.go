@@ -273,7 +273,7 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
         height = 0
       }
     }
-    im = imaging.Resize(im, width, height, imaging.NearestNeighbor)
+    im = imaging.Resize(im, width, height, imaging.Box)
   }
 
   if rot != 0 {
