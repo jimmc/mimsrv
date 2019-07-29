@@ -34,6 +34,7 @@ interface NavItem {
   size: number;
   type: string;
   modTime: number;
+  modTimeOutOfOrder: boolean;
   modTimeStr: string;
   text: string;
   textWithoutFlags: string;
@@ -176,6 +177,12 @@ class MimNav extends Polymer.Element {
   handleListResponse(dir: string, list: ListResponse) {
     const navItems = list.Items.map(
         (listItem) => this.listToNav(listItem, dir));
+    for (let i = 1; i < navItems.length; i++) {
+        if (!navItems[i].isDir && !navItems[i-1].isDir &&
+                navItems[i].modTime < navItems[i-1].modTime) {
+            navItems[i].modTimeOutOfOrder = true;
+        }
+    }
     this.updateDirRows(dir, navItems, list);
   }
 
@@ -323,6 +330,9 @@ class MimNav extends Polymer.Element {
     }
     if (row.type == 'index') {
       classList.push('indexfile');
+    }
+    if (row.modTimeOutOfOrder) {
+      classList.push('outoforder');
     }
     const rowIndex = this.rows.indexOf(row);
     if (rowIndex >= 0) {
