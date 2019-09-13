@@ -90,7 +90,9 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   dirApiPath = strings.TrimSuffix(dirApiPath, "/")
   dirPath := fmt.Sprintf("%s/%s", contentRoot, dirApiPath)
 
-  files, err, status := h.readDirFiltered(dirPath)
+  flags := loadDirFlags(dirPath)
+
+  files, err, status := h.readDirFiltered(dirPath, flags.sortByFileTimes)
   if err != nil {
     return nil, err, status
   }
@@ -102,7 +104,6 @@ func (h *Handler) List(dirApiPath string) (*ListResult, error, int) {
   }
 
   loc := readTzFile(dirPath)
-  flags := loadDirFlags(dirPath)
 
   result := h.mapFileInfosToListResult(files, dirPath, loc, flags.ignoreFileTimes)
   result.UnfilteredFileCount = unfilteredFileCount

@@ -113,7 +113,7 @@ func (h *Handler) updateImageIndexItem(indexPath string, command UpdateCommand) 
 // in the same directory and listing them into the index file.
 func (h *Handler) autoCreateIndexFile(indexPath string) (error, int) {
   dir := filepath.Dir(indexPath)
-  files, err, status := h.readDirFiltered(dir)
+  files, err, status := h.readDirFiltered(dir, false)
   if err != nil {
     e := fmt.Errorf("failed to read directory %s: %v", dir, err)
     return e, status

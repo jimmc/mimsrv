@@ -72,6 +72,12 @@ For each directory, the server looks for a text file with the name
 `summary.txt`, and includes the contents of that file as the
 descriptive text for the directory.
 
+The summary.txt file can include special directive lines that start
+with an exclamation mark (!), followed by a command word:
+
+*  ignoreFileTimes - do not display file times for this directory
+*  sortByFileTimes - sort these files by modified time instead of name
+
 Within each directory, the server looks for the file `index.mpr`
 (mpr is for MimPRint) for meta-information about the images in the
 directory. If that file exists, only images whose names are included

@@ -16,9 +16,10 @@ import (
 // in summary.txt in initial bang lines.
 type dirFlags struct {
   ignoreFileTimes bool
+  sortByFileTimes bool
 }
 
-func (h *Handler) readDirFiltered(dirPath string) ([]os.FileInfo, error, int) {
+func (h *Handler) readDirFiltered(dirPath string, sortByFileTimes bool) ([]os.FileInfo, error, int) {
   f, err := os.Open(dirPath)
   if err != nil {
     return nil, fmt.Errorf("failed to open file: %v", err), http.StatusNotFound
@@ -29,7 +30,11 @@ func (h *Handler) readDirFiltered(dirPath string) ([]os.FileInfo, error, int) {
     return nil, fmt.Errorf("failed to read dir: %v", err), http.StatusBadRequest
   }
   files = h.filterOnExtension(dirPath, files)
-  sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
+  sorter := func(i, j int) bool { return files[i].Name() < files[j].Name() }
+  if sortByFileTimes {
+      sorter = func(i, j int) bool { return files[i].ModTime().Before(files[j].ModTime()) }
+  }
+  sort.Slice(files, sorter)
   return files, nil, 0
 }
 
@@ -112,6 +117,9 @@ func parseDirFlags(text string) dirFlags {
     line = strings.TrimPrefix(line, "!")
     if line == "ignoreFileTimes" {
       flags.ignoreFileTimes = true
+    }
+    if line == "sortByFileTimes" {
+      flags.sortByFileTimes = true
     }
   }
   return flags
