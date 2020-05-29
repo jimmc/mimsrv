@@ -6,6 +6,7 @@ import (
   "image"
   "image/color"
   _ "image/jpeg"
+  "io"
   "io/ioutil"
   "log"
   "net/http"
@@ -17,6 +18,7 @@ import (
   "time"
 
   "github.com/disintegration/imaging"
+  "github.com/rwcarlsen/goexif/exif"
 )
 
 const (
@@ -249,13 +251,14 @@ func (h *Handler) loadTextFile(item *ListItem, parentPath string) {
 }
 
 func (h *Handler) Image(path string, width, height, rot int) (image.Image, error, int) {
-  im, _, err := h.imageFromPath(path, width, height)
+  im, exifOrientation, _, err := h.imageFromPath(path, width, height)
   if err != nil {
     return nil, fmt.Errorf("failed to decode image file: %v", err), http.StatusBadRequest
   }
 
   imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
-  rot = rot + h.rotationFromIndex(imageFilePath)
+  exifRotation := exifOrientationToRotation(exifOrientation)
+  rot = rot + h.rotationFromIndexAndExif(imageFilePath, exifRotation)
   if ((rot + 360) / 90) % 2 == 1 {
     width, height = height, width
   }
@@ -284,7 +287,7 @@ func (h *Handler) Image(path string, width, height, rot int) (image.Image, error
   return im, nil, 0
 }
 
-func (h *Handler) imageFromPath(path string, width, height int) (image.Image, string, error) {
+func (h *Handler) imageFromPath(path string, width, height int) (image.Image, int, string, error) {
   ext := strings.ToLower(filepath.Ext(path))
   if (h.videoExts[ext]) {
     return h.imageFromVideo(path, width, height)
@@ -293,17 +296,44 @@ func (h *Handler) imageFromPath(path string, width, height int) (image.Image, st
   }
 }
 
-func (h *Handler) imageFromFile(path string) (image.Image, string, error) {
+// Read and return an image from a file.
+// The int value is the EXIF orientation from the file, or -1 if we don't have one.
+// The string return value is the name of the image format.
+func (h *Handler) imageFromFile(path string) (image.Image, int, string, error) {
   imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
   f, err := os.Open(imageFilePath)
   if err != nil {
-    return nil, "", fmt.Errorf("failed to open file: %v", err)
+    return nil, -1, "", fmt.Errorf("failed to open file: %v", err)
   }
   defer f.Close()
-  return image.Decode(f)
+
+  x, err := exif.Decode(f)
+  if err != nil {
+    return nil, -1, "", err
+  }
+  orientation := -1      // Preset to not-present value.
+  oTag, err := x.Get(exif.Orientation)
+  if err != nil {
+    // Not a fatal error
+    log.Printf("Can't read Orientation from %s: %v", path, err)
+  } else {
+    // log.Printf("Orientation for %s is %v", path, oTag)
+    orientation, err = oTag.Int(0)
+    if err != nil {
+        log.Printf("Can't extract Orientation for %s from tag %v: %v", path, oTag, err)
+        orientation = -1
+    }
+  }
+  _, err = f.Seek(0, io.SeekStart)
+  if err != nil {
+    return nil, -1, "", err
+  }
+
+  img, imgFmt, err := image.Decode(f)
+  return img, orientation, imgFmt, err
 }
 
-func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, string, error) {
+func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, int, string, error) {
   inputFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
   cmd := exec.Command("ffmpeg",
       "-i", inputFilePath,
@@ -314,10 +344,11 @@ func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, s
   cmd.Stdout = &buf
   if err := cmd.Run(); err != nil {
     log.Printf("Error extracting image from video file %v: %v", path, err)
-    return nil, "", fmt.Errorf("Error extracting image from video file %v: %v", path, err)
+    return nil, -1, "", fmt.Errorf("Error extracting image from video file %v: %v", path, err)
   }
   r := bytes.NewReader(buf.Bytes())
-  return image.Decode(r)
+  img, imgFmt, err := image.Decode(r)
+  return img, -1, imgFmt, err
 }
 
 func (h *Handler) transcodeVideoToCache(path string) error {
@@ -408,4 +439,17 @@ func (h *Handler) PutText(path string, command UpdateTextCommand) (error, int) {
     }
   }
   return nil, http.StatusOK
+}
+
+// Given an EXIF Orientation, returns the number of degress of counterclockwise
+// rotation required to  display the image with the appropriate edge at the top.
+// If the value is not one of the 8 defined orientations, returns 0.
+func exifOrientationToRotation(exifOrientation int) int {
+  switch exifOrientation {
+  case 1, 2: return 0
+  case 3, 4: return 180
+  case 5, 6: return -90
+  case 7, 8: return 90
+  }
+  return 0
 }

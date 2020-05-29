@@ -126,33 +126,40 @@ func (h *Handler) autoCreateIndexFile(indexPath string) (error, int) {
   }
 
   for _, file := range files {
-    fmt.Fprintf(f, "%s\n", file.Name())
+    fmt.Fprintf(f, "%s;xo\n", file.Name())
   }
   f.Close()
   return nil, 0
 }
 
 func combineRotations(fileRotation, deltaRotation string) (string, error) {
-  if fileRotation != "" && fileRotation != "+r" && fileRotation != "+rr" && fileRotation != "-r" {
-    return "", fmt.Errorf("rotation %s in file is not valid", fileRotation)
+  xo := ""
+  if fileRotation != "" {
+    if strings.HasPrefix(fileRotation, "xo") {
+      xo = "xo"
+      fileRotation = strings.TrimPrefix(fileRotation, "xo")
+    }
+    if fileRotation != "" && fileRotation != "+r" && fileRotation != "+rr" && fileRotation != "-r" {
+      return "", fmt.Errorf("rotation %s in file is not valid", fileRotation)
+    }
   }
   if deltaRotation != "" && deltaRotation != "+r" && deltaRotation != "+rr" && deltaRotation != "-r" {
     return "", fmt.Errorf("rotation %s in file is not valid", deltaRotation)
   }
   switch fileRotation + deltaRotation {
-    case "": return "", nil
-    case "+r": return "+r", nil
-    case "+rr": return "+rr", nil
-    case "-r": return "-r", nil
-    case "+r+r": return "+rr", nil
-    case "+r+rr": return "-r", nil
-    case "+r-r": return "", nil
-    case "+rr+r": return "-r", nil
-    case "+rr+rr": return "", nil
-    case "+rr-r": return "+r", nil
-    case "-r+r": return "", nil
-    case "-r+rr": return "+r", nil
-    case "-r-r": return "+rr", nil
+    case "": return xo+"", nil
+    case "+r": return xo+"+r", nil
+    case "+rr": return xo+"+rr", nil
+    case "-r": return xo+"-r", nil
+    case "+r+r": return xo+"+rr", nil
+    case "+r+rr": return xo+"-r", nil
+    case "+r-r": return xo+"", nil
+    case "+rr+r": return xo+"-r", nil
+    case "+rr+rr": return xo+"", nil
+    case "+rr-r": return xo+"+r", nil
+    case "-r+r": return xo+"", nil
+    case "-r+rr": return xo+"+r", nil
+    case "-r-r": return xo+"+rr", nil
     default: return "", nil     // can't happen
   }
 }
@@ -293,12 +300,14 @@ func (i *ImageIndex) dirSet() map[string]struct{} {
 }
 
 /* Returns an integer multiple of 90 representing the rotation of the
- * specified image in degrees according to the image index file in the
+ * specified image in degrees according to the exif orientation from the
+ * image file and the entry for that image in the image index file in the
  * same folder as the specified image. If there is no image file, or
  * the image is not found in the index file, or there is an error reading
  * the index file, zero is returned.
  */
-func (h *Handler) rotationFromIndex(imageFilePath string) int {
+func (h *Handler) rotationFromIndexAndExif(imageFilePath string, exifRotation int) int {
+  // log.Printf("rotFromIndexAndExif(%s, %d)", imageFilePath, exifRotation)
   base := filepath.Base(imageFilePath)
   dir := filepath.Dir(imageFilePath)
   indexName := "index.mpr"
@@ -306,7 +315,8 @@ func (h *Handler) rotationFromIndex(imageFilePath string) int {
   b, err := ioutil.ReadFile(indexPath)
   if err != nil {
     // Could be file-not-found, we could check for that and log if something else.
-    return 0
+    // log.Printf("Can't read index file, returning %d", exifRotation)
+    return exifRotation
   }
   indexText := string(b)
   indexLines := strings.Split(indexText, "\n")
@@ -322,11 +332,19 @@ func (h *Handler) rotationFromIndex(imageFilePath string) int {
         return 90
       } else if strings.HasPrefix(payload, "-r") {
         return -90
+      } else if strings.HasPrefix(payload,"xo+rr") {
+        return exifRotation + 180
+      } else if strings.HasPrefix(payload,"xo+r") {
+        return exifRotation + 90
+      } else if strings.HasPrefix(payload,"xo-r") {
+        return exifRotation - 90
+      } else if strings.HasPrefix(payload,"xo") {
+        return exifRotation
       } else {
         return 0
       }
     }
   }
 
-  return 0
+  return exifRotation
 }

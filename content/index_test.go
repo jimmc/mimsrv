@@ -104,7 +104,7 @@ func TestUpdateImageIndex(t *testing.T) {
     Autocreate: true,
   })
   if err != nil {
-    t.Fatalf("failed to update autocreated index: %v", err)
+    t.Fatalf("failed to autocreate index: %v", err)
   }
   err = compareFiles(testIndexFilename, golden0Filename)
   if err != nil {
@@ -176,7 +176,7 @@ func compareFiles(newFilename, refFilename string) error {
     return fmt.Errorf("failed to read reference file %s: %v", refFilename, err)
   }
   if !bytes.Equal(got, want) {
-    return fmt.Errorf("file %s contents: got <<%s>>, want <<%s>>", newFilename, got, want)
+    return fmt.Errorf("file %s vs golden file %s: got <<%s>>, want <<%s>>", newFilename, refFilename, got, want)
   }
   return nil
 }
@@ -198,7 +198,7 @@ func TestLoad(t *testing.T) {
   if got, want := index.indexName, "index.mpr"; got != want {
     t.Errorf("index file name: got %s, want %s", got, want)
   }
-  if got, want := len(index.entries), 5; got != want {
+  if got, want := len(index.entries), 9; got != want {
     t.Fatalf("index entries count: got %d, want %d", got, want)
   }
   if index.entries["image1.jpg"] != nil {
@@ -216,24 +216,82 @@ func TestLoad(t *testing.T) {
 }
 
 func TestRotationFromIndex(t *testing.T) {
+  testCases := []struct{
+    filename string
+    exifRotation int
+    wantResult int
+  }{
+    { "testdata/with-index/no-such-file.jpg", 0, 0 },   // No index file
+    { "testdata/with-index/no-such-file.jpg", 90, 90 },
+    { "testdata/with-index/image1.jpg", 0, 0 },         // Not in index file
+    { "testdata/with-index/image1.jpg", 90, 90 },
+    { "testdata/with-index/image2.jpg", 0, 0 },         // In index file with no rotation
+    { "testdata/with-index/image2.jpg", 90, 0 },
+    { "testdata/with-index/image4.jpg", 0, 90 },        // In index file with +r
+    { "testdata/with-index/image4.jpg", 90, 90 },
+    { "testdata/with-index/image5.jpg", 0, 180 },       // In index file with +rr
+    { "testdata/with-index/image5.jpg", 90, 180 },
+    { "testdata/with-index/image6.jpg", 0, -90 },       // In index file with -r
+    { "testdata/with-index/image6.jpg", 90, -90 },
+    { "testdata/with-index/xo.jpg", 0, 0 },
+    { "testdata/with-index/xo.jpg", 90, 90 },
+    { "testdata/with-index/xo+rr.jpg", 0, 180 },
+    { "testdata/with-index/xo+rr.jpg", 180, 360 },
+    { "testdata/with-index/xo+r.jpg", 0, 90 },
+    { "testdata/with-index/xo+r.jpg", 90, 180 },
+    { "testdata/with-index/xo-r.jpg", 0, -90 },
+    { "testdata/with-index/xo-r.jpg", 90, 0 },
+  }
+
   h := NewHandler(&Config{
     ContentRoot: "testdata",
   });
 
-  if got, want := h.rotationFromIndex("testdata/with-index/no-such-file.jpg"), 0; got != want {
-    t.Errorf("rotation from index for no-such-file: got %d, want %d", got, want)
+  for _, test := range testCases {
+    name := fmt.Sprintf("rotation(%v, %v)", test.filename, test.exifRotation)
+    t.Run(name, func(t *testing.T) {
+      if got, want := h.rotationFromIndexAndExif(test.filename, test.exifRotation), test.wantResult; got != want {
+        t.Errorf("rotationFromIndexAndExif: got %d, want %d", got, want)
+      }
+    })
   }
-  if got, want := h.rotationFromIndex("testdata/with-index/image1.jpg"), 0; got != want {
-    t.Errorf("rotation from index for image1: got %d, want %d", got, want)
+}
+
+func TestCombineRotations(t *testing.T) {
+  testCases := []struct{
+    name string
+    fileRotation string
+    deltaRotation string
+    wantResult string
+    wantErr bool
+  } {
+    { "bad file rot", "invalid", "", "", true },
+    { "bad delta rot", "", "invalid", "", true },
+    { "no rotations", "", "", "", false },
+    { "file rot, no delta", "+r", "", "+r", false },
+    { "file rot with delta", "+r", "+r", "+rr", false },
+    { "xo, no delta", "xo", "", "xo", false },
+    { "xo with delta", "xo", "-r", "xo-r", false },
+    { "xo and file rot, no delta", "xo+rr", "", "xo+rr", false },
+    { "xo and file rot with delta", "xo+rr", "-r", "xo+r", false },
   }
-  if got, want := h.rotationFromIndex("testdata/with-index/image2.jpg"), 0; got != want {
-    t.Errorf("rotation from index for image2: got %d, want %d", got, want)
-  }
-  if got, want := h.rotationFromIndex("testdata/with-index/image4.jpg"), 90; got != want {
-    t.Errorf("rotation from index for image5: got %d, want %d", got, want)
-  }
-  if got, want := h.rotationFromIndex("testdata/with-index/image5.jpg"), 180; got != want {
-    t.Errorf("rotation from index for image5: got %d, want %d", got, want)
+
+  for _, test := range testCases {
+    t.Run(test.name, func(t *testing.T) {
+      got, err := combineRotations(test.fileRotation, test.deltaRotation)
+      gotErr := (err != nil)
+      if gotErr != test.wantErr {
+        if test.wantErr {
+          t.Fatalf("did not get error as expected")
+        } else {
+          t.Fatalf("error combining rotations: %v", err)
+        }
+      }
+      want := test.wantResult
+      if got != want {
+        t.Errorf("combine: got %s, want %s", got, want)
+      }
+    })
   }
 }
 
