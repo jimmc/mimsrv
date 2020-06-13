@@ -301,36 +301,49 @@ func (h *Handler) imageFromPath(path string, width, height int) (image.Image, in
 // The string return value is the name of the image format.
 func (h *Handler) imageFromFile(path string) (image.Image, int, string, error) {
   imageFilePath := fmt.Sprintf("%s/%s", h.config.ContentRoot, path)
+  // log.Printf("Loading image file %s", imageFilePath)
   f, err := os.Open(imageFilePath)
   if err != nil {
     return nil, -1, "", fmt.Errorf("failed to open file: %v", err)
   }
   defer f.Close()
 
-  x, err := exif.Decode(f)
-  if err != nil {
-    return nil, -1, "", err
-  }
-  orientation := -1      // Preset to not-present value.
-  oTag, err := x.Get(exif.Orientation)
-  if err != nil {
-    // Not a fatal error
-    log.Printf("Can't read Orientation from %s: %v", path, err)
-  } else {
-    // log.Printf("Orientation for %s is %v", path, oTag)
-    orientation, err = oTag.Int(0)
-    if err != nil {
-        log.Printf("Can't extract Orientation for %s from tag %v: %v", path, oTag, err)
-        orientation = -1
-    }
-  }
+  // Read the orientation from the exif header in the file.
+  orientation := orientationFromFile(imageFilePath, f)
+  // log.Printf("Exif Orientation for %s is %v", imageFilePath, orientation)
+
   _, err = f.Seek(0, io.SeekStart)
   if err != nil {
+    log.Printf("Error seeking back to 0 on file %s: %v", imageFilePath, err)
     return nil, -1, "", err
   }
 
   img, imgFmt, err := image.Decode(f)
   return img, orientation, imgFmt, err
+}
+
+// orientationFromFile reads the Orientation from the exif header in the file
+// and returns it as an int. If for any reason it is unable to read it, it
+// returns -1. This function moves the file position in f.
+func orientationFromFile(path string, f *os.File) int {
+  orientation := -1      // Preset to not-present value.
+  x, err := exif.Decode(f)
+  if err != nil {
+    log.Printf("Can't read Exif from %s: %v", path, err)
+    return orientation
+  }
+  oTag, err := x.Get(exif.Orientation)
+  if err != nil {
+    log.Printf("Can't read Orientation from %s: %v", path, err)
+    return orientation
+  }
+  // log.Printf("Orientation for %s is %v", path, oTag)
+  orientation, err = oTag.Int(0)
+  if err != nil {
+      log.Printf("Can't extract Orientation for %s from tag %v: %v", path, oTag, err)
+      orientation = -1
+  }
+  return orientation
 }
 
 func (h *Handler) imageFromVideo(path string, width, height int) (image.Image, int, string, error) {
