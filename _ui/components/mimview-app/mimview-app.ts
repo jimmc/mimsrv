@@ -209,10 +209,16 @@ class MimviewApp extends Polymer.Element {
       }
     }
     keys.sort();
-    const helpString = keys.map((key: any) => {
+    const keyHelp = keys.map((key: any) => {
       const entry = this.keyMap[key];
       return key + ": " + entry.desc + "<br>";
     }).join('\n');
+    const extraHelp = "<br>\n\
+summary.txt flag choices:<br>\n\
+&nbsp;&nbsp;!ignoreFileTimes<br>\n\
+&nbsp;&nbsp;!sortByFileTimes<br>\n\
+"
+    const helpString = keyHelp + extraHelp
     this.showHtmlDialog(helpString);
   }
 
