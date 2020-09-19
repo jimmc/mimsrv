@@ -201,6 +201,21 @@ class MimviewApp extends Polymer.Element {
     f.call(el);
   }
 
+  showImageDetails() {
+    if (!this.imgitem) {
+        this.showHtmlDialog("No image selected")
+    }
+    const details =
+        "Name: " + this.imgitem.name + "<br>\n" +
+        "Path: " + this.imgitem.path + "<br>\n" +
+        "Size: " + this.imgitem.size + "<br>\n" +
+        "Description: " + this.imgitem.text + "<br>\n" +
+        "Error: " + this.imgitem.textError + "<br>\n" +
+        "Type: " + this.imgitem.type + "<br>\n" +
+        "Mod time: " + this.imgitem.modTimeStr + "<br>\n"
+    this.showHtmlDialog(details);
+  }
+
   showKeyBindings() {
     var keys = [];
     for (var key in this.keyMap) {
@@ -242,6 +257,8 @@ summary.txt flag choices:<br>\n\
         () => this.editFolderDescription());
     this.addKey('f', 'Fullscreen mode',
         () => this.fullscreen());
+    this.addKey('i', 'Show image details',
+        () => this.showImageDetails());
     this.addKey('r', 'Rotate 90 degrees counterclockwise',
         () => this.rotateCurrent("+r"));
     this.addKey('R', 'Rotate 90 degrees clockwise',
