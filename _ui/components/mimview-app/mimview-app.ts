@@ -172,7 +172,7 @@ class MimviewApp extends Polymer.Element {
     this.editDescription(this.$.nav.currentFolderPathAndText());
   }
 
-  async editDescription(pathAndText: [string]) {
+  async editDescription(pathAndText: string[]) {
     if (!pathAndText) {
       console.log("no current item")
       return;
