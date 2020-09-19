@@ -45,6 +45,7 @@ type ListItem struct {
   IsDir bool
   Size int64
   Type string
+  ExifDateTime time.Time
   ModTime int64          // seconds since the epoch
   ModTimeStr string      // ModTime converted to a string by the server
   Text string
@@ -229,6 +230,7 @@ func (h *Handler) mapFileInfoToListItem(f os.FileInfo, item *ListItem, parentPat
     item.ModTimeStr = t.Format(timeFormat)
   }
   h.loadTextFile(item, parentPath)
+  h.loadExifDateTime(item, parentPath)
 }
 
 func (h *Handler) loadTextFile(item *ListItem, parentPath string) {
@@ -248,6 +250,18 @@ func (h *Handler) loadTextFile(item *ListItem, parentPath string) {
   } else {
     item.Text = string(b)
   }
+}
+
+// loadExifDateTime opens the image file, reads the DateTime field
+// from the exif data, and stores it in the item.
+func (h *Handler) loadExifDateTime(item *ListItem, parentPath string) {
+    imagepath := fmt.Sprintf("%s/%s", parentPath, item.Name)
+    datetime, err := datetimeFromFile(imagepath)
+    if err != nil {
+        log.Printf("Error getting EXIF DateTime for parent %s: %v", parentPath, err)
+    } else {
+        item.ExifDateTime = datetime
+    }
 }
 
 func (h *Handler) Image(path string, width, height, rot int) (image.Image, error, int) {
@@ -309,7 +323,7 @@ func (h *Handler) imageFromFile(path string) (image.Image, int, string, error) {
   defer f.Close()
 
   // Read the orientation from the exif header in the file.
-  orientation := orientationFromFile(imageFilePath, f)
+  orientation := orientationFromOpenFile(imageFilePath, f)
   // log.Printf("Exif Orientation for %s is %v", imageFilePath, orientation)
 
   _, err = f.Seek(0, io.SeekStart)
@@ -322,14 +336,43 @@ func (h *Handler) imageFromFile(path string) (image.Image, int, string, error) {
   return img, orientation, imgFmt, err
 }
 
-// orientationFromFile reads the Orientation from the exif header in the file
+func datetimeFromFile(imageFilePath string) (time.Time, error) {
+  f, err := os.Open(imageFilePath)
+  if err != nil {
+    return time.Time{}, fmt.Errorf("failed to open file: %v", err)
+  }
+  defer f.Close()
+  return datetimeFromOpenFile(imageFilePath, f), nil
+}
+
+// datetimeFromOpenFile reads the Datetime from the exif header in the file
+// and returns it as a time.Time. If for any reason it is unable to read it, it
+// returns the zero time. This function moves the file position in f.
+func datetimeFromOpenFile(path string, f *os.File) time.Time {
+  dt := time.Time{}     // Set to default value.
+  x, err := exif.Decode(f)
+  if err != nil {
+    log.Printf("Can't read Exif for datetime from %s: %v", path, err)
+    return dt
+  }
+  dt, err = x.DateTime()
+  if err != nil {
+    log.Printf("Can't read DateTime from %s: %v", path, err)
+    dt = time.Time{}
+    return dt
+  }
+  log.Printf("DateTime for %s is %v", path, dt)
+  return dt
+}
+
+// orientationFromOpenFile reads the Orientation from the exif header in the file
 // and returns it as an int. If for any reason it is unable to read it, it
 // returns -1. This function moves the file position in f.
-func orientationFromFile(path string, f *os.File) int {
+func orientationFromOpenFile(path string, f *os.File) int {
   orientation := -1      // Preset to not-present value.
   x, err := exif.Decode(f)
   if err != nil {
-    log.Printf("Can't read Exif from %s: %v", path, err)
+    log.Printf("Can't read Exif for orientation from %s: %v", path, err)
     return orientation
   }
   oTag, err := x.Get(exif.Orientation)

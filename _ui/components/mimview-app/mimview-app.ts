@@ -212,7 +212,8 @@ class MimviewApp extends Polymer.Element {
         "Description: " + this.imgitem.text + "<br>\n" +
         "Error: " + this.imgitem.textError + "<br>\n" +
         "Type: " + this.imgitem.type + "<br>\n" +
-        "Mod time: " + this.imgitem.modTimeStr + "<br>\n"
+        "File time: " + this.imgitem.modTimeStr + "<br>\n" +
+        "EXIF DateTime: " + this.imgitem.exifDateTime + "<br>\n"
     this.showHtmlDialog(details);
   }
 

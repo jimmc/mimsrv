@@ -11,6 +11,7 @@ interface ListItem {
   Type: string;
   ModTime: number;      // seconds since the epoch
   ModTimeStr: string;   // ModTime converted to string in the server
+  ExifDateTime: Date;
   Text: string;
   TextError: string;
 }
@@ -36,6 +37,7 @@ interface NavItem {
   modTime: number;
   modTimeOutOfOrder: boolean;
   modTimeStr: string;
+  exifDateTime: Date;
   text: string;
   textWithoutFlags: string;
   textError: string;
@@ -201,6 +203,7 @@ class MimNav extends Polymer.Element {
       type: listItem.Type,
       modTime: listItem.ModTime,
       modTimeStr: this.dtFromFlags(listItem.Text) || listItem.ModTimeStr,
+      exifDateTime: listItem.ExifDateTime,
       text: listItem.Text,
       textWithoutFlags: this.stripFlags(listItem.Text),
       textError: listItem.TextError,
