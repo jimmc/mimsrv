@@ -233,6 +233,9 @@ class MimviewApp extends Polymer.Element {
 summary.txt flag choices:<br>\n\
 &nbsp;&nbsp;!ignoreFileTimes<br>\n\
 &nbsp;&nbsp;!sortByFileTimes<br>\n\
+<br>\n\
+URL query parameter options:<br>\n\
+&nbsp;&nbsp;showExifDateTimes - shows that in [ ]<br>\n\
 "
     const helpString = keyHelp + extraHelp
     this.showHtmlDialog(helpString);

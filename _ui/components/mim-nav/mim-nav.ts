@@ -38,6 +38,7 @@ interface NavItem {
   modTimeOutOfOrder: boolean;
   modTimeStr: string;
   exifDateTime: Date;
+  exifDateTimeOutOfOrder: boolean;
   text: string;
   textWithoutFlags: string;
   textError: string;
@@ -81,6 +82,9 @@ class MimNav extends Polymer.Element {
   @Polymer.decorators.property({type: Object})
   route: any;
 
+  @Polymer.decorators.property({type: Boolean})
+  showExifDateTimes: boolean;
+
   publishChannel: BroadcastChannel;
   subscribeChannel: BroadcastChannel;
   requestedLocation: string;
@@ -92,6 +96,7 @@ class MimNav extends Polymer.Element {
     this.setupRequestedLocation();
     this.queryApiList('');
     this.setupChannels();
+    this.showExifDateTimes = (this.getQueryParm('showExifDateTimes') != null);
   }
 
   setupRequestedLocation() {
@@ -183,6 +188,10 @@ class MimNav extends Polymer.Element {
         if (!navItems[i].isDir && !navItems[i-1].isDir &&
                 navItems[i].modTime < navItems[i-1].modTime) {
             navItems[i].modTimeOutOfOrder = true;
+        }
+        if (!navItems[i].isDir && !navItems[i-1].isDir &&
+                navItems[i].exifDateTime < navItems[i-1].exifDateTime) {
+            navItems[i].exifDateTimeOutOfOrder = true;
         }
     }
     this.updateDirRows(dir, navItems, list);
@@ -336,6 +345,9 @@ class MimNav extends Polymer.Element {
     }
     if (row.modTimeOutOfOrder) {
       classList.push('outoforder');
+    }
+    if (row.exifDateTimeOutOfOrder) {
+      classList.push('exifoutoforder');
     }
     const rowIndex = this.rows.indexOf(row);
     if (rowIndex >= 0) {

@@ -35,13 +35,16 @@
         font-size: small;
         font-style: italic;
       }
-      .size, .date {
+      .size, .date, .exifdate {
         font-size: small;
       }
-      .date {
+      .date, .exifdate {
         font-style: italic;
       }
       .outoforder .date {
+        color: red;
+      }
+      .exifoutoforder .exifdate {
         color: red;
       }
       .text {
@@ -98,6 +101,7 @@
             <span class="path">[[row.name]]</span>
             <span class="size">[[sizeAsString(row)]]</span><br>
             <span class="date" hidden$=[[!row.modTimeStr]]>[[row.modTimeStr]]<br></span>
+            <span class="exifdate" hidden$=[[!showExifDateTimes]]>[ [[row.exifDateTime]] ]<br></span>
             <span class="text">[[row.textWithoutFlags]]</span>
             <span class="textError">[[row.textError]]</span>
           </span>
