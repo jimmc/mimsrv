@@ -236,6 +236,9 @@ summary.txt flag choices:<br>\n\
 <br>\n\
 URL query parameter options:<br>\n\
 &nbsp;&nbsp;showExifDateTimes - shows that in [ ]<br>\n\
+&nbsp;&nbsp;publish - use this on publisher window<br>\n\
+&nbsp;&nbsp;subscribe - use this on a second window<br>\n\
+&nbsp;&nbsp;&nbsp;&nbsp;to track publisher window<br>\n\
 "
     const helpString = keyHelp + extraHelp
     this.showHtmlDialog(helpString);
